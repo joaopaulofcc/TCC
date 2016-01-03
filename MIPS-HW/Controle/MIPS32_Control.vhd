@@ -246,49 +246,40 @@ ARCHITECTURE RTL OF MIPS32_Control IS
 	SIGNAL SIG_Display8_G		:  STD_LOGIC;
 	
 	
-	TYPE controlFSM IS (state_IDLE1, state_IDLE2,
+	TYPE controlFSM IS (	state_IDLE1, state_IDLE2,
 	
-							  stateMIPS_Reset,
+								stateMIPS_Reset,
 	
-							  state_IF_InitPC, state_IF_IDLE, state_IF_Solicita, state_IF_Wait1, state_IF_Wait2,
+								state_IF_InitPC, state_IF_IDLE, state_IF_Solicita, state_IF_Wait1, state_IF_Wait2,
 							  
-							  state_INST_Write_IDLE, state_INST_Write_Solicita, state_INST_Write_Wait1, state_INST_Write_Wait2,
+								state_INST_Write_IDLE, state_INST_Write_Solicita, state_INST_Write_Wait1, state_INST_Write_Wait2,
 							  
-							  state_INST_Read_IDLE, state_INST_Read_Solicita, state_INST_Read_Wait1, state_INST_Read_Wait2,
+								state_INST_Read_IDLE, state_INST_Read_Solicita, state_INST_Read_Wait1, state_INST_Read_Wait2,
 							  
-							  state_DATA_Write_Solicita, state_DATA_Write_Wait1, state_DATA_Write_Wait2,
+								state_DATA_Write_Solicita, state_DATA_Write_Wait1, state_DATA_Write_Wait2,
+								
+								state_DATA_Read_Solicita, state_DATA_Read_Wait1, state_DATA_Read_Wait2,
 							  
-							  state_DATA_Read_Solicita, state_DATA_Read_Wait1, state_DATA_Read_Wait2,
+								state_DATA_Debug_IDLE, state_DATA_Debug_Solicita, state_DATA_Debug_Wait1, state_DATA_Debug_Wait2,
 							  
-							  state_DATA_Debug_IDLE, state_DATA_Debug_Solicita, state_DATA_Debug_Wait1, state_DATA_Debug_Wait2,
+								state_REG_Debug_IDLE, state_REG_Debug_Solicita, state_REG_Debug_Wait1, state_REG_Debug_Wait2,
 							  
-							  state_REG_Debug_IDLE, state_REG_Debug_Solicita, state_REG_Debug_Wait1, state_REG_Debug_Wait2,
+								state_REG_Read_Solicita, state_REG_Read_Wait1, state_REG_Read_Wait2,
 							  
-							  state_REG_Read_Solicita, state_REG_Read_Wait1, state_REG_Read_Wait2,
+								state_REG_Write_Solicita, state_REG_Write_Wait1, state_REG_Write_Wait2,
 							  
-							  state_REG_Write_Solicita, state_REG_Write_Wait1, state_REG_Write_Wait2,
+								stateDECLoad, stateDECFilter,
 							  
-							  stateDECLoad, stateDECFilter,
+								stateEXFilter, stateEXWait1, stateEXWait2,
 							  
-							  stateEXFilter, stateEXWait1, stateEXWait2,
-							  
-							  stateWBFilter							  
+								stateWBFilter,
+	
+								state_Finaliza	
 							  );
 							  
 	SIGNAL currentState	: controlFSM := state_IDLE1;
+		
 	
-	-- Contador de programa.
-	SIGNAL PC					: t_AddressINST ;
-	
-	-- Registradores HI e LO.
-	--SIGNAL LO					: t_Register;
-	--SIGNAL HI					: t_Register;
-	
-	-- OpCode extraído da instrução atual.
-	SIGNAL SIG_INST_opCode	: t_opCode;
-	
-	-- Campo Funct, utilizado para identificação de instruções tipo R.
-	SIGNAL SIG_INST_funct	: t_opCode;
 	
 	
 	SIGNAL SIG_address 	: t_AddressINST;
@@ -614,10 +605,11 @@ BEGIN
 		VARIABLE VAR_instrucaoAtual	: t_Word;
 		VARIABLE VAR_ALUresult			: t_DWord;
 		VARIABLE VAR_ALUflags			: t_Byte;
-		--VARIABLE VAR_contINSTLoad		: INTEGER := 0;
-		--VARIABLE VAR_contINSTFetch		: INTEGER := 0;
 		VARIABLE PC							: t_addressINST;
 		VARIABLE PC_MAX					: t_addressINST;
+		VARIABLE VAR_INST_opCode		: t_opCode;
+		VARIABLE VAR_INST_funct			: t_opCode;
+		VARIABLE VAR_INST_funct2		: t_Funct2;
 	BEGIN
 		
 		-- Reset do circuito.
@@ -686,11 +678,11 @@ BEGIN
 					--sig_Display8_DADO <= "1111";
 					--sig_Display7_DADO <= "1111";
 					
-					sig_Display8_DADO <= "00" & SIG_INST_opCode(5 DOWNTO 4);
-					sig_Display7_DADO <= SIG_INST_opCode(3 DOWNTO 0);
+					sig_Display8_DADO <= "00" & VAR_INST_opCode(5 DOWNTO 4);
+					sig_Display7_DADO <= VAR_INST_opCode(3 DOWNTO 0);
 					
-					sig_Display6_DADO <= "00" & SIG_INST_funct(5 DOWNTO 4);
-					sig_Display5_DADO <= SIG_INST_funct(3 DOWNTO 0);
+					sig_Display6_DADO <= "00" & VAR_INST_funct(5 DOWNTO 4);
+					sig_Display5_DADO <= VAR_INST_funct(3 DOWNTO 0);
 					
 					sig_Display4_DADO <= PC(3 DOWNTO 0);
 					
@@ -701,17 +693,6 @@ BEGIN
 					sig_Display2_DADO <= SIG_RBC_dataOut1(3 DOWNTO 0);
 					
 					sig_Display1_DADO <= SIG_RBC_dataOut2(3 DOWNTO 0);
-										
-					
-					
-					--sig_Display8_DADO <= VAR_instrucaoAtual(31 DOWNTO 28);
-					--sig_Display7_DADO <= VAR_instrucaoAtual(27 DOWNTO 24);
-					--sig_Display6_DADO <= VAR_instrucaoAtual(23 DOWNTO 20);
-					--sig_Display5_DADO <= VAR_instrucaoAtual(19 DOWNTO 16);
-					--sig_Display4_DADO <= VAR_instrucaoAtual(15 DOWNTO 12);
-					--sig_Display3_DADO <= VAR_instrucaoAtual(11 DOWNTO 8);
-					--sig_Display2_DADO <= VAR_instrucaoAtual(7 DOWNTO 4);
-					--sig_Display1_DADO <= VAR_instrucaoAtual(3 DOWNTO 0);
 					
 					SIG_ready <= "01110";
 					
@@ -735,9 +716,11 @@ BEGIN
 					VAR_instrucaoAtual:= (OTHERS => '0');
 					VAR_ALUresult		:= (OTHERS => '0');
 					VAR_ALUflags		:= (OTHERS => '0');
-					--VAR_contINSTLoad	:= 0;
-					--VAR_contINSTFetch	:= 0;
 					PC						:= (OTHERS => '0');
+					PC_MAX				:= (OTHERS => '0');
+					VAR_INST_opCode	:= (OTHERS => '0');
+					VAR_INST_funct		:= (OTHERS => '0');
+					VAR_INST_funct2	:= (OTHERS => '0');
 				
 					currentState <= state_IDLE1;
 					
@@ -906,22 +889,7 @@ BEGIN
 					
 					IF SIG_DRC_ready = "010" THEN
 					
-						IF PC = PC_MAX THEN
-					
-							--VAR_contINSTLoad 	:= 0;
-							--VAR_contINSTFetch := 0;
-							PC 		:= (OTHERS => '0');
-							PC_MAX 	:= (OTHERS => '0');
-					
-							currentState <= state_IDLE2;
-						
-						ELSE
-						
-							PC := PC + 4;
-						
-							currentState <= state_IF_Solicita;
-							
-						END IF;
+						currentState <= state_Finaliza;
 						
 					ELSE
 						
@@ -968,7 +936,7 @@ BEGIN
 					
 					IF SIG_DRC_ready = "001" THEN
 					
-						CASE SIG_INST_opCode IS
+						CASE VAR_INST_opCode IS
 						
 							-- LB
 							WHEN "100000" =>
@@ -1196,10 +1164,41 @@ BEGIN
 				
 					SIG_ready <= "00000";
 					
-					SIG_RBC_opCode 			<= "010";
-					SIG_RBC_reset 				<= '1';
+					SIG_RBC_opCode 	<= "010";
+					SIG_RBC_reset 		<= '1';
 					
-					CASE SIG_INST_opCode IS
+					CASE VAR_INST_opCode IS
+					
+						WHEN "000000" =>
+						
+							CASE VAR_INST_funct IS
+							
+								-- MULT, MULTU
+								WHEN "011000" | "011001" =>
+								
+									SIG_RBC_bytes				<= "010";
+							
+									SIG_RBC_addressWrite1 	<= VAR_addrRBWrite1;
+									SIG_RBC_dataIn1			<= VAR_dataInRB1;
+									
+									SIG_RBC_addressWrite2 	<= VAR_addrRBWrite2;
+									SIG_RBC_dataIn2			<= VAR_dataInRB2;
+									
+									currentState <= state_REG_Write_Wait1;
+								
+								WHEN OTHERS =>
+									
+									SIG_RBC_bytes				<= "000";
+							
+									SIG_RBC_addressWrite1 	<= VAR_addrRBWrite1;
+									SIG_RBC_dataIn1			<= VAR_dataInRB1;
+									
+									SIG_RBC_addressWrite2 	<= VAR_addrRBWrite2;
+									SIG_RBC_dataIn2			<= VAR_dataInRB2;
+									
+									currentState <= state_REG_Write_Wait1;
+							
+							END CASE;
 					
 						-- LUI
 						WHEN "011010" =>
@@ -1251,43 +1250,7 @@ BEGIN
 					
 					IF SIG_RBC_ready = "010" THEN
 					
-						IF PC = PC_MAX THEN
-					
-							--VAR_contINSTLoad 	:= 0;
-							--VAR_contINSTFetch := 0;
-							PC 		:= (OTHERS => '0');
-							PC_MAX 	:= (OTHERS => '0');
-					
-							currentState <= state_IDLE2;
-						
-						ELSE
-						
-							CASE SIG_INST_opCode IS
-					
-								WHEN "000000" =>
-									
-									CASE SIG_INST_funct IS
-							
-										-- JALR
-										WHEN "001001" =>
-										
-											PC := SIG_RBC_dataOut1(7 DOWNTO 0);
-										
-										WHEN OTHERS =>
-								
-											PC := PC + 4;
-								
-									END CASE;
-
-								WHEN OTHERS =>
-								
-									NULL;
-								
-							END CASE;
-							
-							currentState <= state_IF_Solicita;
-							
-						END IF;
+						currentState <= state_Finaliza;
 						
 					ELSE
 						
@@ -1368,11 +1331,11 @@ BEGIN
 					sig_Display8_DADO <= "0111";
 					sig_Display7_DADO <= "0001";
 					
-					--VAR_contINSTFetch := VAR_contINSTFetch + 4;
+					VAR_INST_opCode	:= VAR_instrucaoAtual(31 DOWNTO 26);
 					
-					SIG_INST_opCode	<= VAR_instrucaoAtual(31 DOWNTO 26);
+					VAR_INST_funct 	:= VAR_instrucaoAtual(5 DOWNTO 0);
 					
-					SIG_INST_funct 	<= VAR_instrucaoAtual(5 DOWNTO 0);
+					VAR_INST_funct2 	:= VAR_instrucaoAtual(20 DOWNTO 16);
 					
 					currentState <= stateDECFilter;
 				
@@ -1382,17 +1345,25 @@ BEGIN
 					sig_Display8_DADO <= "0111";
 					sig_Display7_DADO <= "0010";
 					
-					CASE SIG_INST_opCode IS
+					CASE VAR_INST_opCode IS
 				
 						-- INSTRUÇÕES DO TIPO R
 						WHEN "000000" =>
 						
-							CASE SIG_INST_funct IS
+							CASE VAR_INST_funct IS
 							
 								-------------------------------------------------------------
 						
-								-- ADD
-								WHEN "100000" =>
+								-- ADD, 	ADDU, AND, 	 DIV,  DIV, 
+								-- JALR, JR, 	MOVN,  MOVZ, MTHI, 
+								-- MTLO, MULT, MULTU, NOR,  OR, 
+								-- SLLV, SLT,  SLTU,  SRA,  SRAV,
+								-- SRL,  SRLV, SUB,  SUBU,  XOR
+								WHEN "100000" | "100001" | "100100" | "011010" | "011011" | 
+									  "001001" | "001000" | "001011" | "001010" | "010001" |
+									  "010011" | "011000" | "011001" | "100111" | "100101" | 
+									  "000100" | "101010" | "101011" | "000011" | "000111" |
+									  "000010" | "000110" | "100010" | "100011" | "100110" =>
 									
 									VAR_addrRBRead1 := "0" & VAR_instrucaoAtual(25 DOWNTO 21);
 									VAR_addrRBRead2 := "0" & VAR_instrucaoAtual(20 DOWNTO 16);
@@ -1401,72 +1372,76 @@ BEGIN
 									
 								-------------------------------------------------------------
 								
-								-- ADDU
-								WHEN "100001" =>
+								-- NOP
+								WHEN "000000" =>
 								
-									VAR_addrRBRead1 := '0' & VAR_instrucaoAtual(25 DOWNTO 21);
-									VAR_addrRBRead2 := '0' & VAR_instrucaoAtual(20 DOWNTO 16);
+									IF VAR_instrucaoAtual = x"00000000" THEN
 									
-									currentState <= state_REG_Read_Solicita;
+										currentState <= state_Finaliza;
 									
-								-------------------------------------------------------------	
-								
-								-- AND
-								WHEN "100100" =>
-								
-									VAR_addrRBRead1 := '0' & VAR_instrucaoAtual(25 DOWNTO 21);
-									VAR_addrRBRead2 := '0' & VAR_instrucaoAtual(20 DOWNTO 16);
+									-- SLL
+									ELSE
 									
-									currentState <= state_REG_Read_Solicita;
+										VAR_addrRBRead1 := (OTHERS => '0');
+										VAR_addrRBRead2 := "0" & VAR_instrucaoAtual(20 DOWNTO 16);
+										
+										currentState <= state_REG_Read_Solicita;
 									
-								-------------------------------------------------------------
+									END IF;
 								
-								-- DIV, DIVU
-								WHEN "011010" | "011011" =>
+								-- MFHI
+								WHEN "010000" =>
 								
-									VAR_addrRBRead1 := '0' & VAR_instrucaoAtual(25 DOWNTO 21);
-									VAR_addrRBRead2 := '0' & VAR_instrucaoAtual(20 DOWNTO 16);
-									
-									currentState <= state_REG_Read_Solicita;
-								
-								-------------------------------------------------------------
-							
-								-- JALR
-								WHEN "001001" =>
-								
-									VAR_addrRBRead1 := '0' & VAR_instrucaoAtual(25 DOWNTO 21);
+									VAR_addrRBRead1 := CONST_addrHI;
 									VAR_addrRBRead2 := (OTHERS => '0');
+								
+									currentState <= state_REG_Read_Solicita;
 									
-									currentState <= state_REG_Read_Solicita;
-								
 								-------------------------------------------------------------
-							
-								-- SUB
-								WHEN "100010" =>
 								
-									VAR_addrRBRead1 := "0" & VAR_instrucaoAtual(25 DOWNTO 21);
-									VAR_addrRBRead2 := "0" & VAR_instrucaoAtual(20 DOWNTO 16);
-																		
+								-- MFLO
+								WHEN "010010" =>
+								
+									VAR_addrRBRead1 := CONST_addrLO;
+									VAR_addrRBRead2 := (OTHERS => '0');
+								
 									currentState <= state_REG_Read_Solicita;
-																
-								-------------------------------------------------------------
-							
-								-- SUBU
-								WHEN "100011" =>
-								
-									VAR_addrRBRead1 := "0" & VAR_instrucaoAtual(25 DOWNTO 21);
-									VAR_addrRBRead2 := "0" & VAR_instrucaoAtual(20 DOWNTO 16);
-																		
-									currentState <= state_REG_Read_Solicita;
-								
-								-------------------------------------------------------------
+									
 								
 								WHEN OTHERS =>
 								
-									currentState <= state_IDLE2;
+									NULL;
 							
 							END CASE;
 							
+							
+							WHEN "000001" =>
+							
+								CASE VAR_INST_funct2 IS
+									
+									-- BAL, BGEZ, BGEZAL, BLTZ, BLTZAL
+									WHEN "00001" | "10001" | "00000" | "10000" =>
+									
+										VAR_addrRBRead1 := "0" & VAR_instrucaoAtual(25 DOWNTO 21);
+										VAR_addrRBRead2 := "0" & VAR_instrucaoAtual(20 DOWNTO 16);
+										
+										currentState <= state_REG_Read_Solicita;
+									
+									-------------------------------------------------------------
+
+									
+									WHEN OTHERS =>
+									
+										NULL;
+							
+							END CASE;
+							
+								
+							-- J, JAL
+							WHEN "000010" | "000011" =>
+							
+								currentState <= stateEXFilter;
+								
 							-- LUI
 							WHEN "001111" =>
 							
@@ -1483,7 +1458,7 @@ BEGIN
 							
 							WHEN OTHERS =>
 								
-								currentState <= state_IDLE2;
+								NULL;
 							
 						END CASE;
 				
@@ -1497,12 +1472,12 @@ BEGIN
 					sig_Display8_DADO <= "1000";
 					sig_Display7_DADO <= "0001";
 					
-					CASE SIG_INST_opCode IS
+					CASE VAR_INST_opCode IS
 				
 						-- INSTRUÇÕES DO TIPO R
 						WHEN "000000" =>
 						
-							CASE SIG_INST_funct IS
+							CASE VAR_INST_funct IS
 							
 								-------------------------------------------------------------
 						
@@ -1576,15 +1551,206 @@ BEGIN
 								
 								-------------------------------------------------------------
 								
-								-- JALR
-								WHEN "001001" =>
+								-- JALR, MFHI, MFLO, MTHI, MTLO
+								WHEN "001001" | "010000" | "010010" | "010001" | "010011" =>
 								
 									SIG_ready <= "00000";
 									
 									currentState <= stateWBFilter;
 								
+								--------	-----------------------------------------------------
+								
+								-- JR
+								WHEN "001000" =>
+								
+									SIG_ready <= "00000";
+									
+									currentState <= state_Finaliza;
+								
 								-------------------------------------------------------------
-							
+								
+								-- MOVN, MOVZ
+								WHEN "001011" | "001010" =>
+								
+									SIG_ready <= "00000";
+									
+									SIG_ALU_MIPS32_reset 	<= '1';		
+									SIG_ALU_MIPS32_opCode 	<= "010111";
+									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut2;
+									SIG_ALU_MIPS32_in1 		<= (OTHERS => '0');
+									
+									currentState <= stateEXWait1;
+								
+								-------------------------------------------------------------
+								
+								-- MULT
+								WHEN "011000" =>
+								
+									SIG_ready <= "00000";
+									
+									SIG_ALU_MIPS32_reset 	<= '1';		
+									SIG_ALU_MIPS32_opCode 	<= "001010";
+									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
+									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									
+									currentState <= stateEXWait1;
+								
+								-------------------------------------------------------------
+								
+								-- MULTU
+								WHEN "011001" =>
+								
+									SIG_ready <= "00000";
+									
+									SIG_ALU_MIPS32_reset 	<= '1';		
+									SIG_ALU_MIPS32_opCode 	<= "001011";
+									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
+									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									
+									currentState <= stateEXWait1;
+								
+								-------------------------------------------------------------
+								
+								-- NOR
+								WHEN "100111" =>
+								
+									SIG_ready <= "00000";
+									
+									SIG_ALU_MIPS32_reset 	<= '1';		
+									SIG_ALU_MIPS32_opCode 	<= "010001";
+									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
+									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									
+									currentState <= stateEXWait1;
+								
+								-------------------------------------------------------------
+								
+								-- OR
+								WHEN "100101" =>
+								
+									SIG_ready <= "00000";
+									
+									SIG_ALU_MIPS32_reset 	<= '1';		
+									SIG_ALU_MIPS32_opCode 	<= "010010";
+									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
+									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									
+									currentState <= stateEXWait1;
+								
+								-------------------------------------------------------------
+								
+								-- SLL
+								WHEN "000000" =>
+								
+									SIG_ready <= "00000";
+									
+									SIG_ALU_MIPS32_reset 	<= '1';		
+									SIG_ALU_MIPS32_opCode 	<= "010100";
+									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut2;
+									SIG_ALU_MIPS32_in1 		<= x"000000" & "000" & VAR_instrucaoAtual(10 DOWNTO 6);
+									
+									currentState <= stateEXWait1;
+									
+								-------------------------------------------------------------
+								
+								-- SLLV
+								WHEN "000100" =>
+								
+									SIG_ready <= "00000";
+									
+									SIG_ALU_MIPS32_reset 	<= '1';		
+									SIG_ALU_MIPS32_opCode 	<= "010100";
+									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut2;
+									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut1;
+									
+									currentState <= stateEXWait1;
+									
+								-------------------------------------------------------------
+								
+								-- SLT
+								WHEN "101010" =>
+								
+									SIG_ready <= "00000";
+									
+									SIG_ALU_MIPS32_reset 	<= '1';		
+									SIG_ALU_MIPS32_opCode 	<= "001100";
+									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
+									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									
+									currentState <= stateEXWait1;
+									
+								-------------------------------------------------------------
+								
+								-- SLTU
+								WHEN "101011" =>
+								
+									SIG_ready <= "00000";
+									
+									SIG_ALU_MIPS32_reset 	<= '1';		
+									SIG_ALU_MIPS32_opCode 	<= "001101";
+									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
+									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									
+									currentState <= stateEXWait1;
+									
+								-------------------------------------------------------------
+								
+								-- SRA
+								WHEN "000011" =>
+								
+									SIG_ready <= "00000";
+									
+									SIG_ALU_MIPS32_reset 	<= '1';		
+									SIG_ALU_MIPS32_opCode 	<= "010101";
+									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut2;
+									SIG_ALU_MIPS32_in1 		<= x"000000" & "000" & VAR_instrucaoAtual(10 DOWNTO 6);
+									
+									currentState <= stateEXWait1;
+									
+								-------------------------------------------------------------
+								
+								-- SRAV
+								WHEN "000111" =>
+								
+									SIG_ready <= "00000";
+									
+									SIG_ALU_MIPS32_reset 	<= '1';		
+									SIG_ALU_MIPS32_opCode 	<= "010101";
+									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut2;
+									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut1;
+									
+									currentState <= stateEXWait1;
+									
+								-------------------------------------------------------------
+								
+								-- SRL
+								WHEN "000010" =>
+								
+									SIG_ready <= "00000";
+									
+									SIG_ALU_MIPS32_reset 	<= '1';		
+									SIG_ALU_MIPS32_opCode 	<= "010110";
+									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut2;
+									SIG_ALU_MIPS32_in1 		<= x"000000" & "000" & VAR_instrucaoAtual(10 DOWNTO 6);
+									
+									currentState <= stateEXWait1;
+									
+								-------------------------------------------------------------
+								
+								-- SRLV
+								WHEN "000110" =>
+								
+									SIG_ready <= "00000";
+									
+									SIG_ALU_MIPS32_reset 	<= '1';		
+									SIG_ALU_MIPS32_opCode 	<= "010110";
+									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut2;
+									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut1;
+									
+									currentState <= stateEXWait1;
+									
+								-------------------------------------------------------------
+								
 								-- SUB
 								WHEN "100010" =>
 								
@@ -1598,8 +1764,6 @@ BEGIN
 									currentState <= stateEXWait1;
 								
 								-------------------------------------------------------------
-								
-								-------------------------------------------------------------	
 								
 								-- SUBU
 								WHEN "100011" =>
@@ -1615,6 +1779,20 @@ BEGIN
 									
 								-------------------------------------------------------------	
 								
+								-- XOR
+								WHEN "100110" =>
+								
+									SIG_ready <= "00000";
+									
+									SIG_ALU_MIPS32_reset 	<= '1';		
+									SIG_ALU_MIPS32_opCode 	<= "010011";
+									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
+									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									
+									currentState <= stateEXWait1;
+								
+								-------------------------------------------------------------
+								
 									
 								WHEN OTHERS =>
 								
@@ -1622,6 +1800,79 @@ BEGIN
 							
 							END CASE;
 							
+							
+							WHEN "000001" =>
+							
+								CASE VAR_INST_funct2 IS
+									
+									-- BAL, BGEZ, BGEZAL
+									WHEN "00001" | "10001" =>
+									
+										IF SIG_RBC_dataOut1 >= x"00000000" THEN
+									
+											SIG_ready <= "00000";
+											SIG_ALU_MIPS32_reset 	<= '1';		
+											SIG_ALU_MIPS32_opCode 	<= "000001";
+											SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
+											SIG_ALU_MIPS32_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+											
+											currentState <= stateEXWait1;
+										
+										ELSE
+										
+											SIG_ready <= "00000";
+											SIG_ALU_MIPS32_reset 	<= '1';		
+											SIG_ALU_MIPS32_opCode 	<= "000001";
+											SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
+											SIG_ALU_MIPS32_in1 		<= x"00000004";
+											
+											currentState <= stateEXWait1;
+										
+										END IF;
+										
+									-- BLTZ | BLTZAL
+									WHEN "00000" | "10000" =>
+									
+										IF SIG_RBC_dataOut1(31) = '1' THEN
+									
+											SIG_ready <= "00000";
+											SIG_ALU_MIPS32_reset 	<= '1';		
+											SIG_ALU_MIPS32_opCode 	<= "000001";
+											SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
+											SIG_ALU_MIPS32_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+											
+											currentState <= stateEXWait1;
+										
+										ELSE
+										
+											SIG_ready <= "00000";
+											SIG_ALU_MIPS32_reset 	<= '1';		
+											SIG_ALU_MIPS32_opCode 	<= "000001";
+											SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
+											SIG_ALU_MIPS32_in1 		<= x"00000004";
+											
+											currentState <= stateEXWait1;
+										
+										END IF;
+										
+									WHEN OTHERS =>
+									
+										NULL;
+								
+								END CASE;
+							
+							
+							-- J, JAL
+							WHEN "000010" | "000011" =>
+							
+								SIG_ready <= "00000";
+								SIG_ALU_MIPS32_reset 	<= '1';		
+								SIG_ALU_MIPS32_opCode 	<= "000001";
+								SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
+								SIG_ALU_MIPS32_in1 		<= x"0" & "00" & VAR_instrucaoAtual(25 DOWNTO 0);
+								
+								currentState <= stateEXWait1;
+								
 							
 							-- LB, LH, LW, LBU, LHU, SB, SH, SW
 							WHEN "100000" | "100001" | "100011" | "100100" | "100101" | "101000" | "101001" | "101011" =>
@@ -1689,12 +1940,12 @@ BEGIN
 				sig_Display7_DADO <= "0001";
 			
 				-- Filtra o valor do sinal de opCode.
-				CASE SIG_INST_opCode IS
+				CASE VAR_INST_opCode IS
 				
 					-- INSTRUÇÕES DO TIPO R
 					WHEN "000000" =>
 					
-						CASE SIG_INST_funct IS
+						CASE VAR_INST_funct IS
 								
 							-------------------------------------------------------------
 						
@@ -1713,26 +1964,6 @@ BEGIN
 								currentState <= state_REG_Write_Solicita;
 								
 							-------------------------------------------------------------
-								
-							-- ADDU
-							WHEN "100001" =>
-								
-								VAR_addrRBWrite1 := '0' & VAR_instrucaoAtual(15 DOWNTO 11);
-								VAR_dataInRB1	 := VAR_ALUresult(31 DOWNTO 0);
-								
-								currentState <= state_REG_Write_Solicita;
-							
-							-------------------------------------------------------------
-							
-							-- AND
-							WHEN "100100" =>
-								
-								VAR_addrRBWrite1 := '0' & VAR_instrucaoAtual(15 DOWNTO 11);
-								VAR_dataInRB1	 := VAR_ALUresult(31 DOWNTO 0);
-								
-								currentState <= state_REG_Write_Solicita;
-							
-							-------------------------------------------------------------	
 							
 							-- DIV, DIVU
 							WHEN "011010" | "011011" =>
@@ -1756,6 +1987,93 @@ BEGIN
 								currentState <= state_REG_Write_Solicita;
 							
 							-------------------------------------------------------------
+							
+							-- MFHI, MFLO
+							WHEN "010000" | "010010" =>
+								
+								VAR_addrRBWrite1	:= '0' & VAR_instrucaoAtual(15 DOWNTO 11);
+								VAR_dataInRB1	 	:= SIG_RBC_dataOut1;
+								
+								currentState <= state_REG_Write_Solicita;
+							
+							-------------------------------------------------------------
+								
+							-- MOVN
+							WHEN "001011" =>
+							
+								IF(VAR_ALUresult(1 DOWNTO 0) /= "11") THEN
+									
+									VAR_addrRBWrite1 	:= '0' & VAR_instrucaoAtual(15 DOWNTO 11);
+									VAR_dataInRB1		:= SIG_RBC_dataOut1;
+								
+								END IF;
+								
+								currentState <= state_REG_Write_Solicita;
+								
+							-------------------------------------------------------------
+								
+							-- MOVZ
+							WHEN "001010" =>
+							
+								IF(VAR_ALUresult(1 DOWNTO 0) = "11") THEN
+									
+									VAR_addrRBWrite1 	:= '0' & VAR_instrucaoAtual(15 DOWNTO 11);
+									VAR_dataInRB1		:= SIG_RBC_dataOut1;
+								
+								END IF;
+								
+								currentState <= state_REG_Write_Solicita;
+								
+							-------------------------------------------------------------
+							
+							-- MTHI
+							WHEN "010001" =>
+								
+								VAR_addrRBWrite1	:= CONST_addrHI;
+								VAR_dataInRB1	 	:= SIG_RBC_dataOut1;
+								
+								currentState <= state_REG_Write_Solicita;
+							
+							-------------------------------------------------------------
+							
+							-- MTLO
+							WHEN "010011" =>
+								
+								VAR_addrRBWrite1	:= CONST_addrLO;
+								VAR_dataInRB1	 	:= SIG_RBC_dataOut1;
+								
+								currentState <= state_REG_Write_Solicita;
+							
+							-------------------------------------------------------------
+							
+							-- MULT, MULTU
+							WHEN "011000" | "011001" =>
+								
+								VAR_addrRBWrite1	:= CONST_addrLO;
+								VAR_dataInRB1	 	:= VAR_ALUresult(31 DOWNTO 0);
+								
+								VAR_addrRBWrite2	:= CONST_addrHI;
+								VAR_dataInRB2	 	:= VAR_ALUresult(63 DOWNTO 32);
+								
+								currentState <= state_REG_Write_Solicita;
+							
+							-------------------------------------------------------------
+							
+							-- ADDU, AND,  NOR,  OR,  SLL,  
+							-- SLLV, SLT,  SLTU, SRA, SRAV, 
+							-- SRL,  SRLV, XOR,  SUBU
+							WHEN "100001" | "100100" | "100111" | "100101" | "000000" | 
+								  "000100" | "101010" | "101011" | "000011" | "000111" |
+								  "000010" | "000110" | "100110" | "100011" =>
+							
+								-- Salva o valor resultante da operação na ALU
+								-- no registrador indicado em RD.
+								VAR_addrRBWrite1 	:= '0' & VAR_instrucaoAtual(15 DOWNTO 11);
+								VAR_dataInRB1 		:= VAR_ALUresult(31 DOWNTO 0);
+								
+								currentState <= state_REG_Write_Solicita;
+								
+							-------------------------------------------------------------
 								
 							-- SUB
 							WHEN "100010" =>
@@ -1772,18 +2090,6 @@ BEGIN
 								currentState <= state_REG_Write_Solicita;
 								
 							-------------------------------------------------------------
-								
-							-- SUBU
-							WHEN "100011" =>
-							
-								-- Salva o valor resultante da operação na ALU
-								-- no registrador indicado em RD.
-								VAR_addrRBWrite1 	:= '0' & VAR_instrucaoAtual(15 DOWNTO 11);
-								VAR_dataInRB1 		:= VAR_ALUresult(31 DOWNTO 0);
-								
-								currentState <= state_REG_Write_Solicita;
-								
-							-------------------------------------------------------------
 							
 							
 							WHEN OTHERS =>
@@ -1792,6 +2098,45 @@ BEGIN
 							
 						END CASE;
 						
+						
+						WHEN "000001" =>
+							
+							CASE VAR_INST_funct2 IS
+							
+								-- BAL, BGEZAL, BLTZAL
+								WHEN "10001" | "10000" =>
+								
+									VAR_addrRBWrite1	:= "011111";
+									VAR_dataInRB1	 	:= x"000000" & PC + 4;
+									
+									currentState <= state_REG_Write_Solicita;
+									
+								-------------------------------------------------------------
+								
+								-- BGEZ, BLTZ
+								WHEN "00001" | "00000" =>
+								
+									currentState <= state_Finaliza;
+									
+								WHEN OTHERS =>
+								
+									NULL;
+							
+							END CASE;
+							
+						
+						-- J
+						WHEN "000010" =>
+						
+							currentState <= state_Finaliza;
+							
+						-- JAL
+						WHEN "000011" =>
+						
+							VAR_addrRBWrite1	:= "011111";
+							VAR_dataInRB1	 	:= x"000000" & PC + 4;
+							
+							currentState <= state_REG_Write_Solicita;
 						
 						-- LUI
 						WHEN "001111" =>
@@ -1864,6 +2209,65 @@ BEGIN
 							NULL;
 							
 					END CASE;
+					
+				
+				WHEN state_Finaliza =>
+				
+					IF PC = PC_MAX THEN
+					
+							PC 		:= (OTHERS => '0');
+							PC_MAX 	:= (OTHERS => '0');
+					
+							currentState <= state_IDLE2;
+						
+						ELSE
+						
+							CASE VAR_INST_opCode IS
+					
+								WHEN "000000" =>
+									
+									CASE VAR_INST_funct IS
+							
+										-- JALR, JR
+										WHEN "001001" | "001000" =>
+										
+											PC := SIG_RBC_dataOut1(7 DOWNTO 0);
+											
+										WHEN OTHERS =>
+								
+											PC := PC + 4;
+								
+									END CASE;
+									
+								WHEN "000001" =>
+							
+									CASE VAR_INST_funct2 IS
+									
+										-- BAL, BGEZ, BLTZ, BLTZAL
+										WHEN "10001" | "00001" | "00000" | "10000" =>
+										
+											PC := VAR_ALUresult(7 DOWNTO 0);
+									
+										WHEN OTHERS =>
+										
+											PC := PC + 4;
+									
+									END CASE;
+									
+								-- J, JAL
+								WHEN "000010" | "000011" =>
+								
+									PC := VAR_ALUresult(7 DOWNTO 0);
+
+								WHEN OTHERS =>
+								
+									PC := PC + 4;
+								
+							END CASE;
+							
+							currentState <= state_IF_Solicita;
+							
+						END IF;
 				
 	
 				-- Estado Inválido.

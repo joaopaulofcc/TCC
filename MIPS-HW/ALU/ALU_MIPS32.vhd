@@ -50,6 +50,7 @@ END ALU_MIPS32;
 -- Início da arquitetura do bloco ALU_MIPS32.
 ARCHITECTURE RTL OF ALU_MIPS32 IS
 
+
 	-- Márquina de estados da ALU.
 	
 		-- stateReset		= estado onde o circuito é resetado e seus pinos de saída preenchidos com valor '0'.
@@ -314,7 +315,7 @@ BEGIN
 							
 							ELSE
 								
-								SIG_out0 <= (0 => '0', OTHERS => '0');
+								SIG_out0 <= (OTHERS => '0');
 							
 							END IF;
 							
@@ -430,16 +431,16 @@ BEGIN
 						WHEN "010100" 	=>
 							
 							temp := TO_INTEGER(UNSIGNED(SIG_in1(4 DOWNTO 0)));
-						
-							FOR I IN 0 TO 31 LOOP
 							
-								IF I + temp < 32 THEN
+							FOR I IN 0 TO 31 LOOP 
 							
-									SIG_out0(I) <= '0';
-									
+								IF I < temp THEN
+								
+								  SIG_out0(I) <= '0';
+								  
 								ELSE
 								
-								  SIG_out0(I) <= SIG_in0(I + temp);
+								  SIG_out0(I) <= SIG_in0(I - temp);
 								  
 								END IF;
 								
@@ -495,6 +496,26 @@ BEGIN
 								
 							 END LOOP;
 						
+							currentState	<= stateFinish;
+							
+							
+						-- CMP
+						WHEN "010111" 	=>
+						
+							IF SIG_in0 = SIG_in1 THEN
+							
+								SIG_out0 <= x"000000000000000" & "00" & "11";
+							
+							ELSIF SIG_in0 > SIG_in1 THEN
+							
+								SIG_out0 <= x"000000000000000" & "00" & "01";
+							
+							ELSIF SIG_in1 > SIG_in0 THEN
+							
+								SIG_out0 <= x"000000000000000" & "00" & "10";
+							
+							END IF;
+							
 							currentState	<= stateFinish;
 							
 						

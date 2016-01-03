@@ -76,6 +76,8 @@ PACKAGE funcoes IS
 	-- Tipo de dados que representa um Opcode.
 	SUBTYPE t_opCode	IS STD_LOGIC_VECTOR(5 DOWNTO 0);
 	
+	SUBTYPE t_Funct2	IS STD_LOGIC_VECTOR(4 DOWNTO 0);
+	
 	-- Tipo de dados para endereçamento de um GPRs.
 	SUBTYPE t_RegSelect	IS STD_LOGIC_VECTOR (REGISTER_SELECT - 1 DOWNTO 0);
 	
