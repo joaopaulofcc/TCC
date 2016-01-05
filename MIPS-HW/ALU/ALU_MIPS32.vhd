@@ -1,7 +1,7 @@
  --#########################################################################
- --#	 Bacharelado em Ciência da Computação - IFMG campus Formiga - 2015	#
+ --#	 Bacharelado em Ciência da Computação - IFMG campus Formiga - 2016	#
  --#                                                                      	#
- --# 						  Trabalho de Conclusão de Curso								# 
+ --# 						  Trabalho de Conclusão de Curso								#
  --#																								#
  --# 		Implementação de processador baseado no MIPS32 utilizando 			#
  --# 							hardware reconfigurável										#
@@ -14,9 +14,12 @@
  --#                                                                      	#
  --# Otávio de Souza Martins Gomes                                        	#
  --#                                                                      	#
- --# Arquivo: ALU_MIPS32.vhd									                     #
+ --# Arquivo: ALU_MIPS32.vhd		 														#
  --#                                                                      	#
- --# 09/07/15 - Formiga - MG                                              	#
+ --# Esse arquivo descreve a estrutura e comportamento da unidade lógica  	#
+ --# e aritmética a ser utilizada pelo MIPS.											#
+ --#                                                                      	#
+ --# 04/01/16 - Formiga - MG                                              	#
  --#########################################################################
 
  
@@ -34,11 +37,11 @@ ENTITY ALU_MIPS32 IS
 	
 	PORT 
 	(
-		clock			: IN 	STD_LOGIC;	-- Sinal de sincronismo.
+		clock			: IN 	STD_LOGIC;	-- Sinal de clock.
 		reset			: IN 	STD_LOGIC;	-- Sinal de reset do circuito.
-		opCode		: IN 	t_opCode;	-- Código da operação de ALU a ser exeutada.
+		opCode		: IN 	t_opCode;	-- Código da operação de ALU a ser executada.
 		in0			: IN 	t_Word;		-- Primeiro operador (32 bits).
-		in1			: IN 	t_Word;		-- Segundo operador (32 bits).
+		in1			: IN 	t_Word;		-- Segundo operador  (32 bits).
 		out0			: OUT t_DWord;		-- Resultado da operação (64 bits).
 		outFlags		: OUT t_Byte;		-- Vetor de flags.
 		ready			: OUT STD_LOGIC	-- (1) Ready | (0) - Busy.
@@ -47,22 +50,21 @@ ENTITY ALU_MIPS32 IS
 END ALU_MIPS32;
 
 
--- Início da arquitetura do bloco ALU_MIPS32.
-ARCHITECTURE RTL OF ALU_MIPS32 IS
-
+-- Início da declaração da arquitetura da entidade ALU_MIPS32.
+ARCHITECTURE BEHAVIOR OF ALU_MIPS32 IS
 
 	-- Márquina de estados da ALU.
 	
-		-- stateReset		= estado onde o circuito é resetado e seus pinos de saída preenchidos com valor '0'.
-		-- stateIDLE		= estado dummy onde o circuito não realiza nenhuma operação.
-		-- stateLoad		= estado de carregamento dos sinais externos para os pinos internos do circuito.
-		-- stateExecute	= estado onde a operação lógica ou aritmética será executada de acordo com o valor do pino de opCode.
-		-- stateFinish		= estado em que os resultados das operações calculadas no estado Execute são direcionados aos pinos de saída da ALU.
+		-- stateReset		: estado onde o circuito é resetado e seus pinos de saída preenchidos com valor '0'.
+		-- stateIDLE		: estado IDLE onde o circuito não realiza nenhuma operação.
+		-- stateLoad		: estado de carregamento dos sinais externos para os pinos internos do circuito.
+		-- stateExecute	: estado onde a operação lógica ou aritmética será executada de acordo com o valor do pino de opCode.
+		-- stateFinish		: estado em que os resultados das operações calculadas no estado Execute são direcionados aos pinos de saída da ALU.
 		
 	TYPE aluState IS (stateReset, stateIDLE, stateLoad, stateExecute, stateFinish);
-	SIGNAL currentState	: aluState := stateIDLE;
+	SIGNAL currentState	: aluState := stateIDLE; -- Define o estado inicial da máquina como sendo o "stateIDLE".
 	
-	-- Sinais internos do componente para conexão com os pinos externos.
+	-- Sinais para conexão com barramentos externos do circuito, evitando assim que flutuaçoes na entrada propaguem no circuito.
 	SIGNAL SIG_opCode		: t_opCode;
 	SIGNAL SIG_in0			: t_Word;
 	SIGNAL SIG_in1			: t_Word;
@@ -72,6 +74,7 @@ ARCHITECTURE RTL OF ALU_MIPS32 IS
 	
 BEGIN
 
+	-- Direciona os sinais dos barramentos externos para os respectivos sinais internos.
 	SIG_opCode 	<= opCode;
 	SIG_in0		<= in0;
 	SIG_in1		<= in1;
@@ -80,28 +83,28 @@ BEGIN
 	ready			<= SIG_ready;
 
 
-	-- Process de controle de reset e de currentState.
+	-- Process de controle de toda a FSM do circuito.
+	-- Esse process é ativado com alteraçao de valores nos sinais: "clock" e "reset".
 	PROCESS(clock, reset) 
-	
-		-- Variáveis auxiliares nas operações da ALU.
-		VARIABLE a				:	STD_LOGIC_VECTOR(32 DOWNTO 0);
-		VARIABLE b				:	STD_LOGIC_VECTOR(32 DOWNTO 0);
-		VARIABLE c				:	STD_LOGIC_VECTOR(32 DOWNTO 0);
-		VARIABLE vectorZero	:	t_Word := x"00000000";
-		VARIABLE temp			: 	INTEGER;
+		VARIABLE a				:	STD_LOGIC_VECTOR(32 DOWNTO 0);	--
+		VARIABLE b				:	STD_LOGIC_VECTOR(32 DOWNTO 0);	--
+		VARIABLE c				:	STD_LOGIC_VECTOR(32 DOWNTO 0);	--
+		VARIABLE vectorZero	:	t_Word := x"00000000";				--
+		VARIABLE temp			: 	INTEGER;									--
 		
 	BEGIN
 		
-		-- Reset do circuito
+		-- Reset do circuito.
 		IF (reset = '1') THEN
 			
-			-- Direciona a máquina de estado para stateReset.
+			-- Solicita mudança para estado de IDLE do circuito, utilizado para inicialização.
 			currentState 	<= stateReset;
 			
-		-- Caso reset = 0 e clock = 1, encaminha a FSM para o próximo estado.
+			
+		-- Caso o sinal de reset não esteja ativo (alto) e seja borda de subida do clock, executa os comandos da FSM.
 		ELSIF (RISING_EDGE(clock)) THEN
 		
-			-- Verifica o estado atual da FSM
+			-- Filtra de acordo com o estado atual.
 			CASE currentState IS
 			
 				-- Estado IDLE, não realiza nenhuma operação,
@@ -136,8 +139,6 @@ BEGIN
 					-- Filtra qual operação deverá ser executada de acordo
 					-- com o valor de opCode.
 					CASE SIG_opCode IS
-					
-					-------------------------------------------------------------
 					
 					-- CPU Arithmetic Instructions
 					
@@ -257,30 +258,8 @@ BEGIN
 							SIG_out0(31 DOWNTO 0)	<= STD_LOGIC_VECTOR(UNSIGNED(SIG_in0) / UNSIGNED(SIG_in1));
 						
 							currentState <= stateFinish;
-						
-						
-						
-						-- TODO
+					
 						--------------------------------------------------------------------
-						
-						-- MADD
-						--WHEN "000110" 	=>
-						
-						
-						-- MADDU
-						--WHEN "000111" 	=>
-						
-						
-						-- MSUB
-						--WHEN "001000" 	=>
-						
-						
-						-- MSUBU
-						--WHEN "001001" 	=>
-						
-						--------------------------------------------------------------------
-						
-						
 						
 						-- MUL / MULT
 						WHEN "001010" 	=>
@@ -518,7 +497,7 @@ BEGIN
 							
 							currentState	<= stateFinish;
 							
-						
+						-- Estados inválidos
 						WHEN OTHERS		=>
 						
 							NULL;
@@ -534,15 +513,16 @@ BEGIN
 					
 					currentState 	<= stateIDLE;
 		
+				-- Estados inválidos.
 				WHEN OTHERS	=>
 				
 					NULL;
 		
 			END CASE;
-			-- Fim do processamento referente à decifragem.
 		
 		END IF;
 		
 	END PROCESS;
 	
-END RTL;
+END BEHAVIOR;
+-- Fim da declaração da arquitetura da entidade ALU_MIPS32.
