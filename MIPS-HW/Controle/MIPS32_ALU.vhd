@@ -14,12 +14,12 @@
  --#                                                                      	#
  --# Otávio de Souza Martins Gomes                                        	#
  --#                                                                      	#
- --# Arquivo: ALU_MIPS32.vhd		 														#
+ --# Arquivo: MIPS32_ALU.vhd		 														#
  --#                                                                      	#
- --# Esse arquivo descreve a estrutura e comportamento da unidade lógica  	#
- --# e aritmética a ser utilizada pelo MIPS.											#
+ --# Sobre: Esse arquivo descreve a estrutura e comportamento da unidade	#
+ --# 			lógica e aritmética a ser utilizada pelo MIPS.						#
  --#                                                                      	#
- --# 04/01/16 - Formiga - MG                                              	#
+ --# 05/01/16 - Formiga - MG                                              	#
  --#########################################################################
 
  
@@ -30,10 +30,10 @@ USE IEEE.STD_LOGIC_UNSIGNED.ALL;
 USE IEEE.NUMERIC_STD.ALL;
 
 -- Importa arquivos com constantes e funções do autor
-USE WORK.funcoes.ALL;
+USE WORK.MIPS32_Funcoes.ALL;
 
--- Início das declarações do bloco ALU_MIPS32.
-ENTITY ALU_MIPS32 IS
+-- Início das declarações da entidade MIPS32_ALU.
+ENTITY MIPS32_ALU IS
 	
 	PORT 
 	(
@@ -47,11 +47,12 @@ ENTITY ALU_MIPS32 IS
 		ready			: OUT STD_LOGIC	-- (1) Ready | (0) - Busy.
 	);
 	
-END ALU_MIPS32;
+END MIPS32_ALU;
+-- Fim da declaração da entidade MIPS32_ALU.
 
 
--- Início da declaração da arquitetura da entidade ALU_MIPS32.
-ARCHITECTURE BEHAVIOR OF ALU_MIPS32 IS
+-- Início da declaração da arquitetura da entidade MIPS32_ALU.
+ARCHITECTURE BEHAVIOR OF MIPS32_ALU IS
 
 	-- Márquina de estados da ALU.
 	
@@ -62,7 +63,7 @@ ARCHITECTURE BEHAVIOR OF ALU_MIPS32 IS
 		-- stateFinish		: estado em que os resultados das operações calculadas no estado Execute são direcionados aos pinos de saída da ALU.
 		
 	TYPE aluState IS (stateReset, stateIDLE, stateLoad, stateExecute, stateFinish);
-	SIGNAL currentState	: aluState := stateIDLE; -- Define o estado inicial da máquina como sendo o "stateIDLE".
+	SIGNAL nextState	: aluState := stateIDLE; -- Define o estado inicial da máquina como sendo o "stateIDLE".
 	
 	-- Sinais para conexão com barramentos externos do circuito, evitando assim que flutuaçoes na entrada propaguem no circuito.
 	SIGNAL SIG_opCode		: t_opCode;
@@ -71,6 +72,9 @@ ARCHITECTURE BEHAVIOR OF ALU_MIPS32 IS
 	SIGNAL SIG_out0		: t_DWord;
 	SIGNAL SIG_outFlags	: t_Byte;
 	SIGNAL SIG_ready		: STD_LOGIC;
+	
+	-- Vetor de Word totalmente preenchido com '0's utilizado em determinados cálculos na ALU.
+	CONSTANT vectorZero	:	t_Word := x"00000000";
 	
 BEGIN
 
@@ -86,11 +90,10 @@ BEGIN
 	-- Process de controle de toda a FSM do circuito.
 	-- Esse process é ativado com alteraçao de valores nos sinais: "clock" e "reset".
 	PROCESS(clock, reset) 
-		VARIABLE a				:	STD_LOGIC_VECTOR(32 DOWNTO 0);	--
-		VARIABLE b				:	STD_LOGIC_VECTOR(32 DOWNTO 0);	--
-		VARIABLE c				:	STD_LOGIC_VECTOR(32 DOWNTO 0);	--
-		VARIABLE vectorZero	:	t_Word := x"00000000";				--
-		VARIABLE temp			: 	INTEGER;									--
+		VARIABLE a				:	STD_LOGIC_VECTOR(32 DOWNTO 0);	-- Armazena o valor de SIG_in0 com 33 bits - '0' + SIG_in0.
+		VARIABLE b				:	STD_LOGIC_VECTOR(32 DOWNTO 0);	-- Armazena o valor de SIG_in1 com 33 bits - '0' + SIG_in1.
+		VARIABLE c				:	STD_LOGIC_VECTOR(32 DOWNTO 0);	-- Aramzena o resultado de operaçoes envolvendo as variáveis a e b.
+		VARIABLE temp			: 	INTEGER;									-- Utilizado para manter contadores em laços de repetiçao.
 		
 	BEGIN
 		
@@ -98,24 +101,29 @@ BEGIN
 		IF (reset = '1') THEN
 			
 			-- Solicita mudança para estado de IDLE do circuito, utilizado para inicialização.
-			currentState 	<= stateReset;
+			nextState 	<= stateReset;
 			
 			
 		-- Caso o sinal de reset não esteja ativo (alto) e seja borda de subida do clock, executa os comandos da FSM.
 		ELSIF (RISING_EDGE(clock)) THEN
 		
 			-- Filtra de acordo com o estado atual.
-			CASE currentState IS
+			CASE nextState IS
 			
 				-- Estado IDLE, não realiza nenhuma operação,
 				-- para mudar de estado deve resetar o circuito.
 				WHEN stateIDLE 		=>
 				
+					-- Sinaliza que nenhuma operaçao foi concluida.
 					SIG_ready		<= '0';
 				
-					currentState <= stateIDLE;
+					-- Encaminha a FSM para o mesmo estado atual.
+					nextState <= stateIDLE;
 				
+				
+				-- %%
 			
+				
 				-- Estado de reset do circuito.
 				WHEN stateReset 		=>
 					
@@ -127,17 +135,19 @@ BEGIN
 					-- Circuito está ocupado.
 					SIG_ready		<= '0';
 		
-					-- Direciona a FSM para stateLoad.
-					currentState	<= stateExecute;
+					-- Direciona a FSM para o estado de execuçao de instruçoes.
+					nextState	<= stateExecute;
 				
 				
-					
+				-- %%
+			
+				
 				-- Estado de execução das operações determinadas pelo
 				-- valor presente em opCode.
 				WHEN stateExecute		=>
 				
 					-- Filtra qual operação deverá ser executada de acordo
-					-- com o valor de opCode.
+					-- com o valor do barramento opCode.
 					CASE SIG_opCode IS
 					
 					-- CPU Arithmetic Instructions
@@ -150,14 +160,14 @@ BEGIN
 							
 							c := a + b;
 							
-							SIG_outFlags	<= (OTHERS => '0');
-							
+							-- Seta flag de overflow.
 							IF ( c(32) /= c(31) ) THEN
 							
 								SIG_outFlags(4) <= '1';
 							
 							END IF;
 							
+							-- Seta flag de zero.
 							IF(c = x"00000000") THEN
 							
 								SIG_outFlags(2) <= '1';
@@ -166,7 +176,8 @@ BEGIN
 						
 							SIG_out0		<=  vectorZero & c(31 DOWNTO 0);
 					
-							currentState	<= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState	<= stateFinish;
 						
 						-------------------------------------------------------------
 						
@@ -174,23 +185,20 @@ BEGIN
 						WHEN "000001" 	=>
 						
 							SIG_out0 		<= vectorZero & (SIG_in0 + SIG_in1);
-							
-							SIG_outFlags	<= (OTHERS => '0');
-							
+														
 							IF(SIG_out0 = x"0000000000000000") THEN
 							
 								SIG_outFlags(2) <= '1';
 								
 							END IF;
 							
-							currentState	<= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState	<= stateFinish;
 						
 						-------------------------------------------------------------
 						
 						-- CLO
 						WHEN "000010" 	=>
-						
-							SIG_outFlags	<= (OTHERS => '0');
 						
 							temp := 32;
 								
@@ -208,14 +216,13 @@ BEGIN
 										
 							SIG_out0	<= STD_LOGIC_VECTOR(TO_UNSIGNED(temp, SIG_out0'LENGTH));
 							
-							currentState <= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState <= stateFinish;
 							
 						-------------------------------------------------------------
 						
 						-- CLZ
 						WHEN "000011" 	=>
-							
-							SIG_outFlags	<= (OTHERS => '0');
 							
 							temp := 32;
 								
@@ -233,60 +240,55 @@ BEGIN
 										
 							SIG_out0	<= STD_LOGIC_VECTOR(TO_UNSIGNED(temp, SIG_out0'LENGTH));
 							
-							currentState <= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState <= stateFinish;
 						
 						-------------------------------------------------------------
 						
 						-- DIV
 						WHEN "000100" 	=>
 			
-							SIG_outFlags	<= (OTHERS => '0');
-			
 							SIG_out0(63 DOWNTO 32)	<= STD_LOGIC_VECTOR(SIGNED(SIG_in0) MOD SIGNED(SIG_in1));
 							SIG_out0(31 DOWNTO 0)	<= STD_LOGIC_VECTOR(SIGNED(SIG_in0) / SIGNED(SIG_in1));
 						
-							currentState <= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState <= stateFinish;
 						
 						-------------------------------------------------------------
 						
 						-- DIVU
 						WHEN "000101" 	=>
 						
-							SIG_outFlags	<= (OTHERS => '0');
-						
 							SIG_out0(63 DOWNTO 32)	<= STD_LOGIC_VECTOR(UNSIGNED(SIG_in0) MOD UNSIGNED(SIG_in1));
 							SIG_out0(31 DOWNTO 0)	<= STD_LOGIC_VECTOR(UNSIGNED(SIG_in0) / UNSIGNED(SIG_in1));
 						
-							currentState <= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState <= stateFinish;
 					
 						--------------------------------------------------------------------
 						
 						-- MUL / MULT
 						WHEN "001010" 	=>
-							
-							SIG_outFlags	<= (OTHERS => '0');
-							
+						
 							SIG_out0			<= STD_LOGIC_VECTOR(SIGNED(SIG_in0) * SIGNED(SIG_in1));
 						
-							currentState 		<= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState 		<= stateFinish;
 						
 						-------------------------------------------------------------
 						
 						-- MULTU
 						WHEN "001011" 	=>
 						
-							SIG_outFlags	<= (OTHERS => '0');
-						
 							SIG_out0			<= STD_LOGIC_VECTOR(UNSIGNED(SIG_in0) * UNSIGNED(SIG_in1));
 						
-							currentState 		<= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState 		<= stateFinish;
 						
 						-------------------------------------------------------------
 						
 						-- SLT / SLTI
 						WHEN "001100" 	=>
-						
-							SIG_outFlags	<= (OTHERS => '0');
 						
 							IF(SIGNED(SIG_in0) < SIGNED(SIG_in1)) THEN
 								
@@ -298,14 +300,13 @@ BEGIN
 							
 							END IF;
 							
-							currentState <= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState <= stateFinish;
 						
 						-------------------------------------------------------------
 						
 						-- SLTIU / SLTU
 						WHEN "001101" 	=>
-						
-							SIG_outFlags	<= (OTHERS => '0');
 						
 							IF(UNSIGNED(SIG_in0) < UNSIGNED(SIG_in1)) THEN
 								
@@ -317,26 +318,27 @@ BEGIN
 							
 							END IF;
 							
-							currentState <= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState <= stateFinish;
 						
 						-------------------------------------------------------------
 						
 						-- SUB
 						WHEN "001110" 	=>
 						
-							SIG_outFlags	<= (OTHERS => '0');
-						
 							a	:= SIG_in0(31) & SIG_in0;
 							b	:= SIG_in1(31) & SIG_in1;
 							
 							c := a - b;
 							
+							-- Seta flag de overflow.
 							IF ( SIG_out0(32) /= SIG_out0(31) ) THEN
 							
 								SIG_outFlags(4) <= '1';
 							
 							END IF;
 							
+							-- Seta flag de zero.
 							IF(c = x"00000000") THEN
 							
 								SIG_outFlags(2) <= '1';
@@ -345,26 +347,26 @@ BEGIN
 						
 							SIG_out0 	<=  vectorZero & c(31 DOWNTO 0);
 					
-							currentState	<= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState	<= stateFinish;
 						
 						-------------------------------------------------------------
 						
 						-- SUBU
 						WHEN "001111" 	=>
 							
-							SIG_outFlags	<= (OTHERS => '0');
-							
 							SIG_out0 		<= vectorZero & (SIG_in0 - SIG_in1);
 							
+							-- Seta flag de zero.
 							IF(SIG_out0 = x"0000000000000000") THEN
 							
 								SIG_outFlags(2) <= '1';
 								
 							END IF;
 							
-							currentState		<= stateFinish;
+							nextState		<= stateFinish;
 						
-					-------------------------------------------------------------
+					--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||
 					
 					-- CPU Logical Instructions	
 					
@@ -373,7 +375,8 @@ BEGIN
 					
 							SIG_out0 <= vectorZero & (SIG_in0 AND SIG_in1);
 							
-							currentState <= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState <= stateFinish;
 					
 						-------------------------------------------------------------
 					
@@ -382,7 +385,8 @@ BEGIN
 						
 							SIG_out0 <= vectorZero & (SIG_in0 NOR SIG_in1);
 							
-							currentState <= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState <= stateFinish;
 						
 						-------------------------------------------------------------
 						
@@ -391,7 +395,8 @@ BEGIN
 							
 							SIG_out0 <= vectorZero & (SIG_in0 OR SIG_in1);
 							
-							currentState <= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState <= stateFinish;
 						
 						-------------------------------------------------------------
 						
@@ -400,11 +405,15 @@ BEGIN
 						
 							SIG_out0 <= vectorZero & (SIG_in0 XOR SIG_in1);
 							
-							currentState <= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState <= stateFinish;
 						
-					-------------------------------------------------------------
+					--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||
 					
 					-- CPU Shift Instructions	
+					
+						-- Todas as instruções desse bloco foram tiveram suas implementaçoes adaptadas de:
+						-- <http://stackoverflow.com/questions/4174473/universal-shift-arithmetic-right-in-vhdl>
 					
 						-- SLL / SLLV
 						WHEN "010100" 	=>
@@ -425,14 +434,13 @@ BEGIN
 								
 							 END LOOP;
 							
-							currentState	<= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState	<= stateFinish;
 							
 						-------------------------------------------------------------
 						
 						-- SRA / SRAV
 						WHEN "010101" 	=>
-						
-							--http://stackoverflow.com/questions/4174473/universal-shift-arithmetic-right-in-vhdl
 						
 							temp := TO_INTEGER(UNSIGNED(SIG_in1(4 DOWNTO 0)));
 						
@@ -450,14 +458,13 @@ BEGIN
 								
 							 END LOOP;
 						
-							currentState	<= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState	<= stateFinish;
 						
 						-------------------------------------------------------------
 						
 						-- SRL / SRLV
 						WHEN "010110" 	=>
-						
-							--SIG_out0 <= vectorZero & STD_LOGIC_VECTOR( SHIFT_RIGHT( UNSIGNED(SIG_in0), TO_INTEGER( UNSIGNED(SIG_in1(4 DOWNTO 0)) ) ) );
 							
 							temp := TO_INTEGER(UNSIGNED(SIG_in1(4 DOWNTO 0)));
 						
@@ -475,28 +482,10 @@ BEGIN
 								
 							 END LOOP;
 						
-							currentState	<= stateFinish;
+							-- Direciona a FSM para o estado de finalizaçao.
+							nextState	<= stateFinish;
 							
-							
-						-- CMP
-						WHEN "010111" 	=>
 						
-							IF SIG_in0 = SIG_in1 THEN
-							
-								SIG_out0 <= x"000000000000000" & "00" & "11";
-							
-							ELSIF SIG_in0 > SIG_in1 THEN
-							
-								SIG_out0 <= x"000000000000000" & "00" & "01";
-							
-							ELSIF SIG_in1 > SIG_in0 THEN
-							
-								SIG_out0 <= x"000000000000000" & "00" & "10";
-							
-							END IF;
-							
-							currentState	<= stateFinish;
-							
 						-- Estados inválidos
 						WHEN OTHERS		=>
 						
@@ -506,12 +495,17 @@ BEGIN
 					END CASE;
 					
 				
+				-- %%
+			
+				
 				-- Estado onde o resultado das operações realizadas no estado Execute são direcionados para os pinos externos da ALU.
 				WHEN stateFinish		=>
 		
+					-- Sinaliza que a operaçao requerida foi finalizada.
 					SIG_ready		<= '1';
 					
-					currentState 	<= stateIDLE;
+					-- Encaminha a FSM para o estado IDLE.
+					nextState 	<= stateIDLE;
 		
 				-- Estados inválidos.
 				WHEN OTHERS	=>
@@ -525,4 +519,4 @@ BEGIN
 	END PROCESS;
 	
 END BEHAVIOR;
--- Fim da declaração da arquitetura da entidade ALU_MIPS32.
+-- Fim da declaração da arquitetura da entidade MIPS32_ALU.

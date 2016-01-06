@@ -16,11 +16,11 @@
  --#                                                                      	#
  --# Arquivo: MIPS32_Control.vhd 														#
  --#                                                                      	#
- --# Esse arquivo descreve a estrutura e comportamento da unidade de      	#
- --# controle do processador MIPS32, é com esse circuito também que o     	#
- --# Arqduino irá se comunicar.                                           	#
+ --# Sobre: Esse arquivo descreve a estrutura e comportamento da unidade 	#
+ --# 			de controle do processador MIPS32, é com esse circuito também  #
+ --# 			que o Arduino irá se comunicar.                                #
  --#                                                                      	#
- --# 04/01/16 - Formiga - MG                                              	#
+ --# 05/01/16 - Formiga - MG                                              	#
  --#########################################################################
 
  
@@ -32,7 +32,7 @@ USE IEEE.NUMERIC_STD.ALL;
 
 -- Importa as bibliotecas de usuário.
 LIBRARY WORK;
-USE WORK.funcoes.ALL;
+USE WORK.MIPS32_Funcoes.ALL;
 
 
 -- Início da declaração da entidade MIPS32_Control.
@@ -136,15 +136,15 @@ END ENTITY;
 ARCHITECTURE BEHAVIOR OF MIPS32_Control IS
 
 	
-	-- Sinais para conexao com o componente "ALU_MIPS32".
-	SIGNAL SIG_ALU_MIPS32_clock 		:  STD_LOGIC;
-	SIGNAL SIG_ALU_MIPS32_reset		:  STD_LOGIC;
-	SIGNAL SIG_ALU_MIPS32_opCode 		:  t_opCode;
-	SIGNAL SIG_ALU_MIPS32_in0 			: 	t_Word;
-	SIGNAL SIG_ALU_MIPS32_in1 			: 	t_Word;
-	SIGNAL SIG_ALU_MIPS32_out0 		:  t_DWord;
-	SIGNAL SIG_ALU_MIPS32_outFlags 	:  t_Byte;
-	SIGNAL SIG_ALU_MIPS32_ready 		:  STD_LOGIC;
+	-- Sinais para conexao com o componente "MIPS32_ALU".
+	SIGNAL SIG_MIPS32_ALU_clock 		:  STD_LOGIC;
+	SIGNAL SIG_MIPS32_ALU_reset		:  STD_LOGIC;
+	SIGNAL SIG_MIPS32_ALU_opCode 		:  t_opCode;
+	SIGNAL SIG_MIPS32_ALU_in0 			: 	t_Word;
+	SIGNAL SIG_MIPS32_ALU_in1 			: 	t_Word;
+	SIGNAL SIG_MIPS32_ALU_out0 		:  t_DWord;
+	SIGNAL SIG_MIPS32_ALU_outFlags 	:  t_Byte;
+	SIGNAL SIG_MIPS32_ALU_ready 		:  STD_LOGIC;
 	
 	-- Sinais para conexão com o componente "ClockMIPS".
 	SIGNAL SIG_ClockMIPS_clockIN	: STD_LOGIC;
@@ -280,6 +280,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_Control IS
 	
 	
 	-- %%%%%% FSM de controle da memória RAM de Instruçoes %%%%%%
+	
 	-- state_INST_Write_IDLE		: Estado IDLE da FSM dos estados de escrita na RAM de instruçoes.
 	
 	-- state_INST_Write_Solicita	: Estado onde é solicitada a escrita de um determinado byte na posiçao especificada pelo barramento externo.
@@ -306,6 +307,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_Control IS
 	
 	
 	-- %%%%%%   FSM de controle da memória RAM de Dados   %%%%%% 
+	
 	-- state_DATA_Write_Solicita	: Estado onde é solicitada a escrita de um determinado byte na posiçao especificada pelo barramento externo.
 	
 	-- state_DATA_Write_Wait1		: Estado utilizado para ativar a operaçao correspondente no circuito controlador da RAM de dados,
@@ -339,6 +341,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_Control IS
 	
 	
 	-- %%%%%%  FSM de controle do Banco de Registradores  %%%%%%
+	
 	-- state_REG_Read_Solicita		: Estado onde é solicitada a leitura de um determinado byte na posiçao especificada pelo barramento externo.
 	
 	-- state_REG_Read_Wait1			: Estado utilizado para ativar a operaçao correspondente no circuito controlador do Banco de Registradores,
@@ -372,6 +375,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_Control IS
 	
 	
 	-- %%%%%%     FSM de controle do estágio de Busca de Instruçao     %%%%%% 	
+	
 	-- state_IF_Solicita				: Estado onde é solicitado ao controlador da RAM de instruçoes a leitura da próxima instruçao. Envia o valor base do contador de programa (PC),
 	--										  e o controlador é responsável por ler todos os 4 bytes da RAM de instruçoes.
 	
@@ -386,6 +390,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_Control IS
 	
 	
 	-- %%%%%% FSM de controle do estágio de Decodificação da Instruçao %%%%%% 
+	
 	-- state_DEC_Load					: Estado onde o sinal de opCode é preenchido com parte dos dados contidos na  variável de instrução atual.
 	
 	-- state_DEC_Filter				: Estado onde ocorre a decodificação da instruçao atual, de acordo com os campos opCode, funct e funct2 armazenados nas variáveis
@@ -400,6 +405,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_Control IS
 	
 	
 	-- %%%%%%    FSM de controle do estágio de Execuçao da Instruçao   %%%%%% 
+	
 	-- state_EX_Filter				: Estado de filtro da fase de Execução da instruçao. Nesse estado são realizadas as solicitaçoes de calculos na ALU e espera pelo resultado calculado.
 	
 	-- state_EX_Wait1					: Estado utilizado para ativar a operaçao requisitada na ALU no estado anterior ou seja, após o sinal de reset ser 
@@ -412,6 +418,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_Control IS
 	
 	
 	-- %%%%%%    FSM de controle do estágio de Writeback da Instruçao  %%%%%% 
+	
 	-- state_WB_Filter				: Estado onde a instruçao atual é filtrada e de acordo com o tipo de instruçao dados resultantes da execuçao
 	-- 									  dessa instruçao no estado de execuçao podem ser salvos no Banco de Registradores ou na memória RAM de dados.
 	
@@ -540,7 +547,7 @@ BEGIN
 	
 	
 	-- Importaçao do compoente e mapeamento de portas do display de 7 segmentos 1 (HEX0).
-	mapDisplay1: ENTITY WORK.bin_7seg 
+	mapDisplay1: ENTITY WORK.MIPS32_7Seg 
 		PORT MAP
 		(
 			DADO	=> SIG_Display1_DADO,
@@ -554,7 +561,7 @@ BEGIN
 		);
 		
 	-- Importaçao do compoente e mapeamento de portas do display de 7 segmentos 2 (HEX1).
-	mapDisplay2: ENTITY WORK.bin_7seg 
+	mapDisplay2: ENTITY WORK.MIPS32_7Seg 
 		PORT MAP
 		(
 			DADO	=> SIG_Display2_DADO,
@@ -568,7 +575,7 @@ BEGIN
 		);
 		
 	-- Importaçao do compoente e mapeamento de portas do display de 7 segmentos 3 (HEX2).
-	mapDisplay3: ENTITY WORK.bin_7seg 
+	mapDisplay3: ENTITY WORK.MIPS32_7Seg 
 		PORT MAP
 		(
 			DADO	=> SIG_Display3_DADO,
@@ -583,7 +590,7 @@ BEGIN
 		
 	
 	-- Importaçao do compoente e mapeamento de portas do display de 7 segmentos 4 (HEX3).
-	mapDisplay4: ENTITY WORK.bin_7seg 
+	mapDisplay4: ENTITY WORK.MIPS32_7Seg 
 		PORT MAP
 		(
 			DADO	=> SIG_Display4_DADO,
@@ -598,7 +605,7 @@ BEGIN
 		
 		
 	-- Importaçao do compoente e mapeamento de portas do display de 7 segmentos 5 (HEX4).
-	mapDisplay5: ENTITY WORK.bin_7seg 
+	mapDisplay5: ENTITY WORK.MIPS32_7Seg 
 		PORT MAP
 		(
 			DADO	=> SIG_Display5_DADO,
@@ -613,7 +620,7 @@ BEGIN
 	
 	
 	-- Importaçao do compoente e mapeamento de portas do display de 7 segmentos 6 (HEX5).
-	mapDisplay6: ENTITY WORK.bin_7seg 
+	mapDisplay6: ENTITY WORK.MIPS32_7Seg 
 		PORT MAP
 		(
 			DADO	=> SIG_Display6_DADO,
@@ -628,7 +635,7 @@ BEGIN
 		
 
 	-- Importaçao do compoente e mapeamento de portas do display de 7 segmentos 7 (HEX6).
-	mapDisplay7: ENTITY WORK.bin_7seg 
+	mapDisplay7: ENTITY WORK.MIPS32_7Seg 
 		PORT MAP
 		(
 			DADO	=> SIG_Display7_DADO,
@@ -642,7 +649,7 @@ BEGIN
 		);
 		
 	-- Importaçao do compoente e mapeamento de portas do display de 7 segmentos 8 (HEX7).
-	mapDisplay8: ENTITY WORK.bin_7seg 
+	mapDisplay8: ENTITY WORK.MIPS32_7Seg 
 		PORT MAP
 		(
 			DADO	=> SIG_Display8_DADO,
@@ -657,22 +664,22 @@ BEGIN
 		
 		
 		
-	-- Importaçao e mapeamento de portas do componente ALU_MIPS32.
-	mapALU_MIPS32: ENTITY WORK.ALU_MIPS32 
+	-- Importaçao e mapeamento de portas do componente MIPS32_ALU.
+	mapMIPS32_ALU: ENTITY WORK.MIPS32_ALU 
 		PORT MAP
 		(
-			clock			=> SIG_ALU_MIPS32_clock,
-			reset			=> SIG_ALU_MIPS32_reset,
-			opCode		=> SIG_ALU_MIPS32_opCode,
-			in0			=> SIG_ALU_MIPS32_in0,
-			in1			=> SIG_ALU_MIPS32_in1,
-			out0			=> SIG_ALU_MIPS32_out0,
-			outFlags		=> SIG_ALU_MIPS32_outFlags,
-			ready			=> SIG_ALU_MIPS32_ready
+			clock			=> SIG_MIPS32_ALU_clock,
+			reset			=> SIG_MIPS32_ALU_reset,
+			opCode		=> SIG_MIPS32_ALU_opCode,
+			in0			=> SIG_MIPS32_ALU_in0,
+			in1			=> SIG_MIPS32_ALU_in1,
+			out0			=> SIG_MIPS32_ALU_out0,
+			outFlags		=> SIG_MIPS32_ALU_outFlags,
+			ready			=> SIG_MIPS32_ALU_ready
 		);
 		
 	-- Importaçao e mapeamento de portas do componente ClockMIPS.
-	mapClockMIPS: ENTITY WORK.ClockMIPS
+	mapClockMIPS: ENTITY WORK.MIPS32_Clock
 		PORT MAP
 		(
 			clockIN	=> SIG_ClockMIPS_clockIN,
@@ -740,7 +747,7 @@ BEGIN
 	
 	
 	-- Sincroniza o clock dos componentes com o sinal de saída do divisor de frequencia "ClockMIPS" (ambos componentes recebem o mesmo sinal de clock).
-	SIG_ALU_MIPS32_clock <= SIG_ClockMIPS_clockOUT;
+	SIG_MIPS32_ALU_clock <= SIG_ClockMIPS_clockOUT;
 	SIG_IRC_clock			<= SIG_ClockMIPS_clockOUT;
 	SIG_DRC_clock			<= SIG_ClockMIPS_clockOUT;
 	SIG_RBC_clock			<= SIG_ClockMIPS_clockOUT;
@@ -823,8 +830,10 @@ BEGIN
 				-- Estados inválidos.
 				WHEN OTHERS =>
 				
+					-- Sinaliza erro.
 					SIG_error <= "11";
 					
+					-- Encaminha a FSM para o estado IDLE de finalizaçao.
 					nextState <= state_IDLE_Fim;
 				
 			END CASE;			
@@ -944,7 +953,7 @@ BEGIN
 					sig_Display8_DADO <= "0001";
 					sig_Display7_DADO <= "0001";
 					
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 					
 					-- Preenche os sinais do circuito controlador da RAM de instruçoes.
@@ -968,7 +977,7 @@ BEGIN
 					sig_Display8_DADO <= "0001";
 					sig_Display7_DADO <= "0010";
 					
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 			
 					-- Coloca o sinal de reset da controladora em nivel baixo, fazendo com que essa saia do estado de reset e execute.
@@ -1050,7 +1059,7 @@ BEGIN
 					sig_Display8_DADO <= "0010";
 					sig_Display7_DADO <= "0001";
 					
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 					
 					-- Preenche os sinais do circuito controlador da RAM de instruçoes.
@@ -1073,7 +1082,7 @@ BEGIN
 					sig_Display8_DADO <= "0010";
 					sig_Display7_DADO <= "0010";
 					
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 			
 					-- Coloca o sinal de reset da controladora em nivel baixo, fazendo com que essa saia do estado de reset e execute.
@@ -1128,7 +1137,7 @@ BEGIN
 					sig_Display8_DADO <= "0001";
 					sig_Display7_DADO <= "0001";
 					
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 					
 					-- Preenche os sinais do circuito controlador da RAM de dados.
@@ -1152,7 +1161,7 @@ BEGIN
 					sig_Display8_DADO <= "0001";
 					sig_Display7_DADO <= "0010";
 					
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 			
 					-- Coloca o sinal de reset da controladora em nivel baixo, fazendo com que essa saia do estado de reset e execute.
@@ -1204,7 +1213,7 @@ BEGIN
 					sig_Display8_DADO <= "0001";
 					sig_Display7_DADO <= "0001";
 					
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 					
 					-- Preenche os sinais do circuito controlador da RAM de dados.
@@ -1229,7 +1238,7 @@ BEGIN
 					sig_Display8_DADO <= "0001";
 					sig_Display7_DADO <= "0010";
 					
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 					
 					-- Coloca o sinal de reset da controladora em nivel baixo, fazendo com que essa saia do estado de reset e execute.
@@ -1295,8 +1304,10 @@ BEGIN
 							-- Estados inválidos.
 							WHEN OTHERS =>
 							
+								-- Sinaliza erro.
 								SIG_error <= "11";
 							
+								-- Encaminha a FSM para o estado IDLE de finalizaçao.
 								nextState <= state_IDLE_Fim;
 						
 						END CASE;
@@ -1348,7 +1359,7 @@ BEGIN
 					sig_Display8_DADO <= "0010";
 					sig_Display7_DADO <= "0001";
 					
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 					
 					-- Preenche os sinais do circuito controlador da RAM de dados.
@@ -1372,7 +1383,7 @@ BEGIN
 					sig_Display8_DADO <= "0010";
 					sig_Display7_DADO <= "0010";
 					
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 			
 					-- Coloca o sinal de reset da controladora em nivel baixo, fazendo com que essa saia do estado de reset e execute.
@@ -1451,7 +1462,7 @@ BEGIN
 					sig_Display8_DADO <= "0011";
 					sig_Display7_DADO <= "0001";
 				
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 					
 					-- Preenche os sinais do circuito controlador do Banco de Registradores.
@@ -1476,7 +1487,7 @@ BEGIN
 					sig_Display8_DADO <= "0011";
 					sig_Display7_DADO <= "0010";
 					
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 			
 					-- Coloca o sinal de reset da controladora em nivel baixo, fazendo com que essa saia do estado de reset e execute.
@@ -1532,7 +1543,7 @@ BEGIN
 					sig_Display8_DADO <= "0100";
 					sig_Display7_DADO <= "0001";
 				
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 					
 					-- Preenche os sinais do circuito controlador do Banco de Registradores.
@@ -1557,7 +1568,7 @@ BEGIN
 					sig_Display8_DADO <= "0100";
 					sig_Display7_DADO <= "0010";
 					
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 			
 					-- Coloca o sinal de reset da controladora em nivel baixo, fazendo com que essa saia do estado de reset e execute.
@@ -1614,7 +1625,7 @@ BEGIN
 					sig_Display8_DADO <= "0101";
 					sig_Display7_DADO <= "0001";
 				
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 					
 					-- Preenche os sinais do circuito controlador do Banco de Registradores.
@@ -1690,7 +1701,7 @@ BEGIN
 					sig_Display8_DADO <= "0101";
 					sig_Display7_DADO <= "0010";
 					
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 			
 					-- Coloca o sinal de reset da controladora em nivel baixo, fazendo com que essa saia do estado de reset e execute.
@@ -1747,7 +1758,7 @@ BEGIN
 					sig_Display8_DADO <= "0110";
 					sig_Display7_DADO <= "0001";
 					
-					-- Sinaliza no barramento "ready" que não operaçoes concluidas, i.e. o circuito está ocupado.
+					-- Sinaliza no barramento "ready" que não há operaçoes concluidas, i.e. o circuito está ocupado.
 					SIG_ready <= "000";
 					
 					-- Escreve dados nos barramentos do controlador da RAM de instruçoes
@@ -1923,8 +1934,10 @@ BEGIN
 								-- Estados inválidos.
 								WHEN OTHERS =>
 								
+									-- Sinaliza erro.
 									SIG_error <= "11";
 								
+									-- Encaminha a FSM para o estado IDLE de finalizaçao.
 									nextState <= state_IDLE_Fim;
 							
 							END CASE;
@@ -1949,8 +1962,10 @@ BEGIN
 									-- Estados inválidos.
 									WHEN OTHERS =>
 									
+										-- Sinaliza erro.
 										SIG_error <= "11";
 									
+										-- Encaminha a FSM para o estado IDLE de finalizaçao.
 										nextState <= state_IDLE_Fim;
 							
 							END CASE;
@@ -2005,8 +2020,10 @@ BEGIN
 									-- Estados inválidos.
 									WHEN OTHERS =>
 									
+										-- Sinaliza erro.
 										SIG_error <= "11";
 									
+										-- Encaminha a FSM para o estado IDLE de finalizaçao.
 										nextState <= state_IDLE_Fim;
 							
 								END CASE;
@@ -2017,8 +2034,10 @@ BEGIN
 							-- Estados inválidos.
 							WHEN OTHERS =>
 								
+								-- Sinaliza erro.
 								SIG_error <= "11";
 								
+								-- Encaminha a FSM para o estado IDLE de finalizaçao.
 								nextState <= state_IDLE_Fim;
 							
 						END CASE;
@@ -2053,10 +2072,10 @@ BEGIN
 									
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "000000";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "000000";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut2;
 									
 									nextState <= state_EX_Wait1;
 									
@@ -2067,10 +2086,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "000001";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "000001";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut2;
 									
 									nextState <= state_EX_Wait1;
 									
@@ -2081,10 +2100,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "010000";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "010000";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut2;
 									
 									nextState <= state_EX_Wait1;
 								
@@ -2095,10 +2114,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "000100";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "000100";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut2;
 									
 									nextState <= state_EX_Wait1;
 								
@@ -2109,23 +2128,23 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "000101";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "000101";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut2;
 									
 									nextState <= state_EX_Wait1;
 								
 								-------------------------------------------------------------
 								
-								-- JALR, MFHI, MFLO, MTHI, MTLO
-								WHEN "001001" | "010000" | "010010" | "010001" | "010011" =>
+								-- JALR, MFHI, MFLO, MTHI, MTLO, MOVN, MOVZ
+								WHEN "001001" | "010000" | "010010" | "010001" | "010011" | "001011" | "001010" =>
 								
 									SIG_ready <= "000";
 									
 									nextState <= state_WB_Filter;
 								
-								--------	-----------------------------------------------------
+								-------------------------------------------------------------
 								
 								-- JR
 								WHEN "001000" =>
@@ -2136,29 +2155,15 @@ BEGIN
 								
 								-------------------------------------------------------------
 								
-								-- MOVN, MOVZ
-								WHEN "001011" | "001010" =>
-								
-									SIG_ready <= "000";
-									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "010111";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut2;
-									SIG_ALU_MIPS32_in1 		<= (OTHERS => '0');
-									
-									nextState <= state_EX_Wait1;
-								
-								-------------------------------------------------------------
-								
 								-- MULT
 								WHEN "011000" =>
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "001010";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "001010";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut2;
 									
 									nextState <= state_EX_Wait1;
 								
@@ -2169,10 +2174,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "001011";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "001011";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut2;
 									
 									nextState <= state_EX_Wait1;
 								
@@ -2183,10 +2188,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "010001";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "010001";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut2;
 									
 									nextState <= state_EX_Wait1;
 								
@@ -2197,10 +2202,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "010010";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "010010";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut2;
 									
 									nextState <= state_EX_Wait1;
 								
@@ -2211,10 +2216,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "010100";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut2;
-									SIG_ALU_MIPS32_in1 		<= x"000000" & "000" & VAR_instrucaoAtual(10 DOWNTO 6);
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "010100";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_in1 		<= x"000000" & "000" & VAR_instrucaoAtual(10 DOWNTO 6);
 									
 									nextState <= state_EX_Wait1;
 									
@@ -2225,10 +2230,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "010100";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut2;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "010100";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut1;
 									
 									nextState <= state_EX_Wait1;
 									
@@ -2239,10 +2244,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "001100";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "001100";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut2;
 									
 									nextState <= state_EX_Wait1;
 									
@@ -2253,10 +2258,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "001101";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "001101";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut2;
 									
 									nextState <= state_EX_Wait1;
 									
@@ -2267,10 +2272,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "010101";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut2;
-									SIG_ALU_MIPS32_in1 		<= x"000000" & "000" & VAR_instrucaoAtual(10 DOWNTO 6);
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "010101";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_in1 		<= x"000000" & "000" & VAR_instrucaoAtual(10 DOWNTO 6);
 									
 									nextState <= state_EX_Wait1;
 									
@@ -2281,10 +2286,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "010101";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut2;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "010101";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut1;
 									
 									nextState <= state_EX_Wait1;
 									
@@ -2295,10 +2300,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "010110";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut2;
-									SIG_ALU_MIPS32_in1 		<= x"000000" & "000" & VAR_instrucaoAtual(10 DOWNTO 6);
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "010110";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_in1 		<= x"000000" & "000" & VAR_instrucaoAtual(10 DOWNTO 6);
 									
 									nextState <= state_EX_Wait1;
 									
@@ -2309,10 +2314,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "010110";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut2;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "010110";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut1;
 									
 									nextState <= state_EX_Wait1;
 									
@@ -2323,10 +2328,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "001110";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "001110";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut2;
 									
 									nextState <= state_EX_Wait1;
 								
@@ -2337,10 +2342,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "001111";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "001111";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut2;
 									
 									nextState <= state_EX_Wait1;
 									
@@ -2351,10 +2356,10 @@ BEGIN
 								
 									SIG_ready <= "000";
 									
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "010011";
-									SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-									SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "010011";
+									SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+									SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut2;
 									
 									nextState <= state_EX_Wait1;
 								
@@ -2362,6 +2367,10 @@ BEGIN
 								-- Estados inválidos
 								WHEN OTHERS =>
 								
+									-- Sinaliza erro.
+									SIG_error <= "11";
+								
+									-- Encaminha a FSM para o estado IDLE de finalizaçao.
 									nextState <= state_IDLE_Fim;
 							
 							END CASE;
@@ -2381,20 +2390,20 @@ BEGIN
 										IF SIG_RBC_dataOut1 >= x"00000000" THEN
 									
 											SIG_ready <= "000";
-											SIG_ALU_MIPS32_reset 	<= '1';		
-											SIG_ALU_MIPS32_opCode 	<= "000001";
-											SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
-											SIG_ALU_MIPS32_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+											SIG_MIPS32_ALU_reset 	<= '1';		
+											SIG_MIPS32_ALU_opCode 	<= "000001";
+											SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
+											SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
 											
 											nextState <= state_EX_Wait1;
 										
 										ELSE
 										
 											SIG_ready <= "000";
-											SIG_ALU_MIPS32_reset 	<= '1';		
-											SIG_ALU_MIPS32_opCode 	<= "000001";
-											SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
-											SIG_ALU_MIPS32_in1 		<= x"00000004";
+											SIG_MIPS32_ALU_reset 	<= '1';		
+											SIG_MIPS32_ALU_opCode 	<= "000001";
+											SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
+											SIG_MIPS32_ALU_in1 		<= x"00000004";
 											
 											nextState <= state_EX_Wait1;
 										
@@ -2408,20 +2417,20 @@ BEGIN
 										IF SIG_RBC_dataOut1(31) = '1' THEN
 									
 											SIG_ready <= "000";
-											SIG_ALU_MIPS32_reset 	<= '1';		
-											SIG_ALU_MIPS32_opCode 	<= "000001";
-											SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
-											SIG_ALU_MIPS32_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+											SIG_MIPS32_ALU_reset 	<= '1';		
+											SIG_MIPS32_ALU_opCode 	<= "000001";
+											SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
+											SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
 											
 											nextState <= state_EX_Wait1;
 										
 										ELSE
 										
 											SIG_ready <= "000";
-											SIG_ALU_MIPS32_reset 	<= '1';		
-											SIG_ALU_MIPS32_opCode 	<= "000001";
-											SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
-											SIG_ALU_MIPS32_in1 		<= x"00000004";
+											SIG_MIPS32_ALU_reset 	<= '1';		
+											SIG_MIPS32_ALU_opCode 	<= "000001";
+											SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
+											SIG_MIPS32_ALU_in1 		<= x"00000004";
 											
 											nextState <= state_EX_Wait1;
 										
@@ -2430,6 +2439,10 @@ BEGIN
 									-- Estados inválidos
 									WHEN OTHERS =>
 									
+										-- Sinaliza erro.
+										SIG_error <= "11";
+									
+										-- Encaminha a FSM para o estado IDLE de finalizaçao.
 										nextState <= state_IDLE_Fim;
 										
 									-- FIM DO OPCODE "000001"
@@ -2444,20 +2457,20 @@ BEGIN
 								IF SIG_RBC_dataOut1 = SIG_RBC_dataOut2 THEN
 									
 									SIG_ready <= "000";
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "000001";
-									SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
-									SIG_ALU_MIPS32_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "000001";
+									SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
+									SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
 									
 									nextState <= state_EX_Wait1;
 								
 								ELSE
 								
 									SIG_ready <= "000";
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "000001";
-									SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
-									SIG_ALU_MIPS32_in1 		<= x"00000004";
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "000001";
+									SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
+									SIG_MIPS32_ALU_in1 		<= x"00000004";
 									
 									nextState <= state_EX_Wait1;
 								
@@ -2471,20 +2484,20 @@ BEGIN
 								IF SIG_RBC_dataOut1 /= SIG_RBC_dataOut2 THEN
 									
 									SIG_ready <= "000";
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "000001";
-									SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
-									SIG_ALU_MIPS32_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "000001";
+									SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
+									SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
 									
 									nextState <= state_EX_Wait1;
 								
 								ELSE
 								
 									SIG_ready <= "000";
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "000001";
-									SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
-									SIG_ALU_MIPS32_in1 		<= x"00000004";
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "000001";
+									SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
+									SIG_MIPS32_ALU_in1 		<= x"00000004";
 									
 									nextState <= state_EX_Wait1;
 								
@@ -2498,20 +2511,20 @@ BEGIN
 								IF (SIG_RBC_dataOut1(31) = '1') OR (SIG_RBC_dataOut1 = x"00000000") THEN
 									
 									SIG_ready <= "000";
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "000001";
-									SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
-									SIG_ALU_MIPS32_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "000001";
+									SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
+									SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
 									
 									nextState <= state_EX_Wait1;
 								
 								ELSE
 								
 									SIG_ready <= "000";
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "000001";
-									SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
-									SIG_ALU_MIPS32_in1 		<= x"00000004";
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "000001";
+									SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
+									SIG_MIPS32_ALU_in1 		<= x"00000004";
 									
 									nextState <= state_EX_Wait1;
 								
@@ -2525,20 +2538,20 @@ BEGIN
 								IF (SIG_RBC_dataOut1(31) = '0') AND (SIG_RBC_dataOut1 /= x"00000000") THEN
 									
 									SIG_ready <= "000";
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "000001";
-									SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
-									SIG_ALU_MIPS32_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "000001";
+									SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
+									SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
 									
 									nextState <= state_EX_Wait1;
 								
 								ELSE
 								
 									SIG_ready <= "000";
-									SIG_ALU_MIPS32_reset 	<= '1';		
-									SIG_ALU_MIPS32_opCode 	<= "000001";
-									SIG_ALU_MIPS32_in0 		<= x"000000" & PC;
-									SIG_ALU_MIPS32_in1 		<= x"00000004";
+									SIG_MIPS32_ALU_reset 	<= '1';		
+									SIG_MIPS32_ALU_opCode 	<= "000001";
+									SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
+									SIG_MIPS32_ALU_in1 		<= x"00000004";
 									
 									nextState <= state_EX_Wait1;
 								
@@ -2551,10 +2564,10 @@ BEGIN
 							
 								SIG_ready <= "000";
 									
-								SIG_ALU_MIPS32_reset 	<= '1';		
-								SIG_ALU_MIPS32_opCode 	<= "000000";
-								SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-								SIG_ALU_MIPS32_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+								SIG_MIPS32_ALU_reset 	<= '1';		
+								SIG_MIPS32_ALU_opCode 	<= "000000";
+								SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+								SIG_MIPS32_ALU_in1 		<= STD_LOGIC_VECTOR( RESIZE(SIGNED(VAR_instrucaoAtual(15 DOWNTO 0)), SIG_MIPS32_ALU_in1'LENGTH) );
 								
 								nextState <= state_EX_Wait1;
 								
@@ -2565,10 +2578,10 @@ BEGIN
 							
 								SIG_ready <= "000";
 									
-								SIG_ALU_MIPS32_reset 	<= '1';		
-								SIG_ALU_MIPS32_opCode 	<= "000001";
-								SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-								SIG_ALU_MIPS32_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+								SIG_MIPS32_ALU_reset 	<= '1';		
+								SIG_MIPS32_ALU_opCode 	<= "000001";
+								SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+								SIG_MIPS32_ALU_in1 		<= STD_LOGIC_VECTOR( RESIZE(SIGNED(VAR_instrucaoAtual(15 DOWNTO 0)), SIG_MIPS32_ALU_in1'LENGTH) );
 								
 								nextState <= state_EX_Wait1;
 								
@@ -2579,10 +2592,10 @@ BEGIN
 								
 								SIG_ready <= "000";
 								
-								SIG_ALU_MIPS32_reset 	<= '1';		
-								SIG_ALU_MIPS32_opCode 	<= "010000";
-								SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-								SIG_ALU_MIPS32_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+								SIG_MIPS32_ALU_reset 	<= '1';		
+								SIG_MIPS32_ALU_opCode 	<= "010000";
+								SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+								SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
 								
 								nextState <= state_EX_Wait1;
 								
@@ -2593,10 +2606,10 @@ BEGIN
 							
 								SIG_ready <= "000";
 								
-								SIG_ALU_MIPS32_reset 	<= '1';		
-								SIG_ALU_MIPS32_opCode 	<= "010010";
-								SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-								SIG_ALU_MIPS32_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+								SIG_MIPS32_ALU_reset 	<= '1';		
+								SIG_MIPS32_ALU_opCode 	<= "010010";
+								SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+								SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
 								
 								nextState <= state_EX_Wait1;
 								
@@ -2607,10 +2620,10 @@ BEGIN
 							
 								SIG_ready <= "000";
 								
-								SIG_ALU_MIPS32_reset 	<= '1';		
-								SIG_ALU_MIPS32_opCode 	<= "010011";
-								SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-								SIG_ALU_MIPS32_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+								SIG_MIPS32_ALU_reset 	<= '1';		
+								SIG_MIPS32_ALU_opCode 	<= "010011";
+								SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+								SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
 								
 								nextState <= state_EX_Wait1;
 								
@@ -2621,10 +2634,10 @@ BEGIN
 								
 								SIG_ready <= "000";
 								
-								SIG_ALU_MIPS32_reset 	<= '1';		
-								SIG_ALU_MIPS32_opCode 	<= "001100";
-								SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-								SIG_ALU_MIPS32_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+								SIG_MIPS32_ALU_reset 	<= '1';		
+								SIG_MIPS32_ALU_opCode 	<= "001100";
+								SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+								SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
 								
 								nextState <= state_EX_Wait1;
 								
@@ -2635,10 +2648,10 @@ BEGIN
 								
 								SIG_ready <= "000";
 								
-								SIG_ALU_MIPS32_reset 	<= '1';		
-								SIG_ALU_MIPS32_opCode 	<= "001101";
-								SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-								SIG_ALU_MIPS32_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+								SIG_MIPS32_ALU_reset 	<= '1';		
+								SIG_MIPS32_ALU_opCode 	<= "001101";
+								SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+								SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
 								
 								nextState <= state_EX_Wait1;
 							
@@ -2649,10 +2662,10 @@ BEGIN
 					
 								SIG_ready <= "000";
 									
-								SIG_ALU_MIPS32_reset 	<= '1';		
-								SIG_ALU_MIPS32_opCode 	<= "000001";
-								SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-								SIG_ALU_MIPS32_in1 		<=  STD_LOGIC_VECTOR( RESIZE(SIGNED(VAR_instrucaoAtual(15 DOWNTO 0)), SIG_ALU_MIPS32_in1'LENGTH) );
+								SIG_MIPS32_ALU_reset 	<= '1';		
+								SIG_MIPS32_ALU_opCode 	<= "000001";
+								SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+								SIG_MIPS32_ALU_in1 		<=  STD_LOGIC_VECTOR( RESIZE(SIGNED(VAR_instrucaoAtual(15 DOWNTO 0)), SIG_MIPS32_ALU_in1'LENGTH) );
 								
 								nextState <= state_EX_Wait1;
 								
@@ -2669,10 +2682,10 @@ BEGIN
 								
 										SIG_ready <= "000";
 									
-										SIG_ALU_MIPS32_reset 	<= '1';		
-										SIG_ALU_MIPS32_opCode 	<= "000010";
-										SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-										SIG_ALU_MIPS32_in1 		<= (OTHERS => '0');
+										SIG_MIPS32_ALU_reset 	<= '1';		
+										SIG_MIPS32_ALU_opCode 	<= "000010";
+										SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+										SIG_MIPS32_ALU_in1 		<= (OTHERS => '0');
 										
 										nextState <= state_EX_Wait1;
 										
@@ -2683,10 +2696,10 @@ BEGIN
 								
 										SIG_ready <= "000";
 									
-										SIG_ALU_MIPS32_reset 	<= '1';		
-										SIG_ALU_MIPS32_opCode 	<= "000011";
-										SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-										SIG_ALU_MIPS32_in1 		<= (OTHERS => '0');
+										SIG_MIPS32_ALU_reset 	<= '1';		
+										SIG_MIPS32_ALU_opCode 	<= "000011";
+										SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+										SIG_MIPS32_ALU_in1 		<= (OTHERS => '0');
 										
 										nextState <= state_EX_Wait1;
 								
@@ -2697,18 +2710,20 @@ BEGIN
 								
 										SIG_ready <= "000";
 									
-										SIG_ALU_MIPS32_reset 	<= '1';		
-										SIG_ALU_MIPS32_opCode 	<= "001010";
-										SIG_ALU_MIPS32_in0 		<= SIG_RBC_dataOut1;
-										SIG_ALU_MIPS32_in1 		<= SIG_RBC_dataOut2;
+										SIG_MIPS32_ALU_reset 	<= '1';		
+										SIG_MIPS32_ALU_opCode 	<= "001010";
+										SIG_MIPS32_ALU_in0 		<= SIG_RBC_dataOut1;
+										SIG_MIPS32_ALU_in1 		<= SIG_RBC_dataOut2;
 										
 										nextState <= state_EX_Wait1;
 								
 									-- Estados inválidos.
 									WHEN OTHERS =>
 									
+										-- Sinaliza erro.
 										SIG_error <= "11";
 									
+										-- Encaminha a FSM para o estado IDLE de finalizaçao.
 										nextState <= state_IDLE_Fim;
 							
 								END CASE;
@@ -2717,8 +2732,10 @@ BEGIN
 							-- Estados inválidos.
 							WHEN OTHERS =>
 								
+								-- Sinaliza erro.
 								SIG_error <= "11";
 								
+								-- Encaminha a FSM para o estado IDLE de finalizaçao.
 								nextState <= state_IDLE_Fim;
 							
 						END CASE;
@@ -2736,7 +2753,7 @@ BEGIN
 					sig_Display7_DADO <= "0010";
 					
 					-- Coloca o sinal de reset da ALU, fazendo com que essa saia do estado de reset e execute.
-					SIG_ALU_MIPS32_reset <= '0';
+					SIG_MIPS32_ALU_reset <= '0';
 					
 					-- Encaminha a FSM para o estado "Wait2".
 					nextState <= state_EX_Wait2;
@@ -2754,11 +2771,11 @@ BEGIN
 					sig_Display7_DADO <= "0011";
 					
 					-- Garante que o circuito da ALU não está recebendo sinal de reset.
-					SIG_ALU_MIPS32_reset <= '0';
+					SIG_MIPS32_ALU_reset <= '0';
 					
 					-- Verifica se o sinal "ready" da ALU é igual a '1', caso seja a operaçao foi concluída,
 					-- caso contrario e necessario aguardar por mais um ciclo.
-					IF SIG_ALU_MIPS32_ready = '1' THEN
+					IF SIG_MIPS32_ALU_ready = '1' THEN
 					
 						-- Encaminha a FSM para o estado de Writeback.
 						nextState <= state_WB_Filter;
@@ -2772,8 +2789,8 @@ BEGIN
 					END IF;
 					
 					-- Armazena nas variáveis de ALU os dados resultantes dos sinais de resultado(out0) e flags(outFlags) calculados na ALU.
-					VAR_ALUresult 	:= SIG_ALU_MIPS32_out0;
-					VAR_ALUflags	:= SIG_ALU_MIPS32_outFlags;
+					VAR_ALUresult 	:= SIG_MIPS32_ALU_out0;
+					VAR_ALUflags	:= SIG_MIPS32_ALU_outFlags;
 					
 					
 			-- %%%%%%%%%%%%%%% TÉRMINO DA FSM DE EXECUÇÃO %%%%%%%%%%%%%%%
@@ -2854,7 +2871,7 @@ BEGIN
 							-- MOVN
 							WHEN "001011" =>
 							
-								IF(VAR_ALUresult(1 DOWNTO 0) /= "11") THEN
+								IF(SIG_RBC_dataOut2 /= x"00000000") THEN
 									
 									VAR_addrRBWrite1 	:= '0' & VAR_instrucaoAtual(15 DOWNTO 11);
 									VAR_dataInRB1		:= SIG_RBC_dataOut1;
@@ -2868,7 +2885,7 @@ BEGIN
 							-- MOVZ
 							WHEN "001010" =>
 							
-								IF(VAR_ALUresult(1 DOWNTO 0) = "11") THEN
+								IF(SIG_RBC_dataOut2 = x"00000000") THEN
 									
 									VAR_addrRBWrite1 	:= '0' & VAR_instrucaoAtual(15 DOWNTO 11);
 									VAR_dataInRB1		:= SIG_RBC_dataOut1;
@@ -2947,8 +2964,10 @@ BEGIN
 							-- Estados inválidos.
 							WHEN OTHERS =>
 								
+								-- Sinaliza erro.
 								SIG_error <= "11";
 								
+								-- Encaminha a FSM para o estado IDLE de finalizaçao.
 								nextState <= state_IDLE_Fim;
 							
 						END CASE;
@@ -2980,8 +2999,10 @@ BEGIN
 								-- Estados inválidos.
 								WHEN OTHERS =>
 								
+									-- Sinaliza erro.
 									SIG_error <= "11";
 								
+									-- Encaminha a FSM para o estado IDLE de finalizaçao.
 									nextState <= state_IDLE_Fim;
 							
 							END CASE;
@@ -3124,18 +3145,22 @@ BEGIN
 								-- Estados inválidos.
 								WHEN OTHERS =>
 								
+									-- Sinaliza erro.
 									SIG_error <= "11";
 								
+									-- Encaminha a FSM para o estado IDLE de finalizaçao.
 									nextState <= state_IDLE_Fim;
 						
 							END CASE;
 							-- FIM DO OPCODE "011100"
 							
 						-- Estados inválidos.
-						WHEN OTHERS =>
-								
+						WHEN OTHERS =>	
+							
+							-- Sinaliza erro.
 							SIG_error <= "11";
 								
+							-- Encaminha a FSM para o estado IDLE de finalizaçao.
 							nextState <= state_IDLE_Fim;
 							
 					END CASE;
@@ -3238,8 +3263,10 @@ BEGIN
 				-- Estado Inválido.
 				WHEN OTHERS =>
 				
+					-- Sinaliza erro.
 					SIG_error <= "11";
 				
+					-- Encaminha a FSM para o estado IDLE de finalizaçao.
 					nextState <= state_IDLE_Fim;
 					
 			END CASE;

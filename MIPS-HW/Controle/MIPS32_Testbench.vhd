@@ -1,5 +1,27 @@
--- Test Bench para Controle
-
+ --#########################################################################
+ --#	 Bacharelado em Ciência da Computação - IFMG campus Formiga - 2016	#
+ --#                                                                      	#
+ --# 						  Trabalho de Conclusão de Curso								#
+ --#																								#
+ --# 		Implementação de processador baseado no MIPS32 utilizando 			#
+ --# 							hardware reconfigurável										#
+ --#																							  	#
+ --# ALUNO                                                             		#
+ --#                                                                      	#
+ --# João Paulo Fernanades de Cerqueira César                             	#
+ --#                                                                      	#
+ --# ORIENTADOR                                                           	#
+ --#                                                                      	#
+ --# Otávio de Souza Martins Gomes                                        	#
+ --#                                                                      	#
+ --# Arquivo: MIPS32_Testbench.vhd	 													#
+ --#                                                                      	#
+ --# Sobre: Esse arquivo descreve um arquivo de testbench para o arquivo	#
+ --# 			MIPS32_Control.																#
+ --#                                                                      	#
+ --# 05/01/16 - Formiga - MG                                              	#
+ --#########################################################################
+ 
 -- Importa bibliotecas do sistema
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
@@ -7,17 +29,17 @@ USE IEEE.NUMERIC_STD.all;
 
 -- Importa as bibliotecas de usuário
 LIBRARY WORK;
-USE WORK.funcoes.ALL;
+USE WORK.MIPS32_Funcoes.ALL;
 USE STD.TEXTIO.ALL;
 
--- Início da declaração da entidade TestBench
-ENTITY TestBench IS
-END ENTITY TestBench;
--- Fim da declaração da entidade TestBench
+-- Início da declaração da entidade MIPS32_Testbench
+ENTITY MIPS32_Testbench IS
+END ENTITY MIPS32_Testbench;
+-- Fim da declaração da entidade MIPS32_Testbench
 
 
--- Início da declaração da arquitetura da entidade TestBench
-ARCHITECTURE sinais OF TestBench IS
+-- Início da declaração da arquitetura da entidade MIPS32_Testbench
+ARCHITECTURE sinais OF MIPS32_Testbench IS
 	
 	-- Sinais internos
 	SIGNAL SIG_address	: 	t_AddressDATA;
@@ -431,4 +453,4 @@ BEGIN
 	
 	
 END ARCHITECTURE sinais;
--- Fim da declaração da arquitetura da entidade TestBench
+-- Fim da declaração da arquitetura da entidade MIPS32_Testbench
