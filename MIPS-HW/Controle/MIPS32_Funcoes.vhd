@@ -66,7 +66,11 @@ PACKAGE MIPS32_Funcoes IS
 	
 	-- Define o Fator de divisão do clock utilizado no MIPS.
 	-- Onde, fatorClock = 50000000/clockDesejado(Hz).
-	CONSTANT fatorClock			: NATURAL := 6250;
+	
+		-- OBS:  para testbench 		-> fatorClock = 1
+		--			execuçao com Arduino -> fatorClock = 6250
+		
+	CONSTANT fatorClock			: NATURAL := 1;
 
 
 	--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||

@@ -22,24 +22,26 @@
  --# 05/01/16 - Formiga - MG                                              	#
  --#########################################################################
  
--- Importa bibliotecas do sistema
+-- Importa bibliotecas do sistema.
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.all;
 
--- Importa as bibliotecas de usuário
+-- Importa as bibliotecas de usuário.
 LIBRARY WORK;
 USE WORK.MIPS32_Funcoes.ALL;
 USE STD.TEXTIO.ALL;
 
--- Início da declaração da entidade MIPS32_Testbench
+-- Início da declaração da entidade MIPS32_Testbench.
 ENTITY MIPS32_Testbench IS
+
+
 END ENTITY MIPS32_Testbench;
--- Fim da declaração da entidade MIPS32_Testbench
+-- Fim da declaração da entidade MIPS32_Testbench.
 
 
 -- Início da declaração da arquitetura da entidade MIPS32_Testbench
-ARCHITECTURE sinais OF MIPS32_Testbench IS
+ARCHITECTURE BEHAVIOR OF MIPS32_Testbench IS
 	
 	-- Sinais internos
 	SIGNAL SIG_address	: 	t_AddressDATA;
@@ -48,101 +50,14 @@ ARCHITECTURE sinais OF MIPS32_Testbench IS
 	SIGNAL SIG_clockOUT	: 	STD_LOGIC;
 	SIGNAL SIG_clockIN	: 	STD_LOGIC;
 	SIGNAL SIG_opCode		: 	STD_LOGIC_VECTOR(2 DOWNTO 0);
-	SIGNAL SIG_ready		: 	STD_LOGIC_VECTOR(4 DOWNTO 0);
+	SIGNAL SIG_ready		: 	STD_LOGIC_VECTOR(2 DOWNTO 0);
+	SIGNAL SIG_error		: 	STD_LOGIC_VECTOR(1 DOWNTO 0);
 	SIGNAL SIG_reset		:	STD_LOGIC;
   
   
-	-- Início da declaração da entidade MIPS32_Control.
-	COMPONENT MIPS32_Control
-
-		PORT 
-		(
-			address			: IN t_AddressDATA;
-			dataOUT			: OUT t_Byte;
-			dataIN			: IN t_Byte;
-			
-			PIN_clockOUT	: OUT STD_LOGIC;
-			PIN_clockIN		: IN STD_LOGIC;
-			
-			opCode			: IN STD_LOGIC_VECTOR(2 DOWNTO 0);
-			
-			ready				: OUT STD_LOGIC_VECTOR(4 DOWNTO 0);
-			
-			reset				: IN STD_LOGIC;
-					
-			
-			A1			: OUT STD_LOGIC;
-			B1			: OUT STD_LOGIC;
-			C1			: OUT STD_LOGIC;
-			D1			: OUT STD_LOGIC;
-			E1			: OUT STD_LOGIC;
-			F1			: OUT STD_LOGIC;
-			G1			: OUT STD_LOGIC;
-			
-			A2			: OUT STD_LOGIC;
-			B2			: OUT STD_LOGIC;
-			C2			: OUT STD_LOGIC;
-			D2			: OUT STD_LOGIC;
-			E2			: OUT STD_LOGIC;
-			F2			: OUT STD_LOGIC;
-			G2			: OUT STD_LOGIC;
-			
-			A3			: OUT STD_LOGIC;
-			B3			: OUT STD_LOGIC;
-			C3			: OUT STD_LOGIC;
-			D3			: OUT STD_LOGIC;
-			E3			: OUT STD_LOGIC;
-			F3			: OUT STD_LOGIC;
-			G3			: OUT STD_LOGIC;
-			
-			A4			: OUT STD_LOGIC;
-			B4			: OUT STD_LOGIC;
-			C4			: OUT STD_LOGIC;
-			D4			: OUT STD_LOGIC;
-			E4			: OUT STD_LOGIC;
-			F4			: OUT STD_LOGIC;
-			G4			: OUT STD_LOGIC;
-			
-			A5			: OUT STD_LOGIC;
-			B5			: OUT STD_LOGIC;
-			C5			: OUT STD_LOGIC;
-			D5			: OUT STD_LOGIC;
-			E5			: OUT STD_LOGIC;
-			F5			: OUT STD_LOGIC;
-			G5			: OUT STD_LOGIC;
-			
-			A6			: OUT STD_LOGIC;
-			B6			: OUT STD_LOGIC;
-			C6			: OUT STD_LOGIC;
-			D6			: OUT STD_LOGIC;
-			E6			: OUT STD_LOGIC;
-			F6			: OUT STD_LOGIC;
-			G6			: OUT STD_LOGIC;
-			
-			A7			: OUT STD_LOGIC;
-			B7			: OUT STD_LOGIC;
-			C7			: OUT STD_LOGIC;
-			D7			: OUT STD_LOGIC;
-			E7			: OUT STD_LOGIC;
-			F7			: OUT STD_LOGIC;
-			G7			: OUT STD_LOGIC;
-			
-			A8			: OUT STD_LOGIC;
-			B8			: OUT STD_LOGIC;
-			C8			: OUT STD_LOGIC;
-			D8			: OUT STD_LOGIC;
-			E8			: OUT STD_LOGIC;
-			F8			: OUT STD_LOGIC;
-			G8			: OUT STD_LOGIC
-		);
-
-	END COMPONENT;
-	-- Fim da declaração da entidade MIPS32_Control.	
-  
-  
-	-- function to convert string of character to vector
-	FUNCTION str2vec(str : string) RETURN std_logic_vector IS
-		VARIABLE vtmp: std_logic_vector(str'RANGE);
+	-- Funçao responsável por converter uma string em um vetor STD_LOGIC_VECTOR.
+	FUNCTION str2vec(str : STRING) RETURN STD_LOGIC_VECTOR IS
+		VARIABLE vtmp: STD_LOGIC_VECTOR(str'RANGE);
 	BEGIN
 	
 		FOR i IN str'RANGE LOOP
@@ -168,9 +83,8 @@ ARCHITECTURE sinais OF MIPS32_Testbench IS
 	END str2vec;
 	
 	
-	-- function to convert vector to string
-	-- for use in assert statements
-	FUNCTION vec2str(vec : std_logic_vector) RETURN string IS
+	-- Funçao utilizada para converter um vetor STD_LOGIC_VECTOR em string.
+	FUNCTION vec2str(vec : STD_LOGIC_VECTOR) RETURN STRING IS
 		VARIABLE stmp : string(vec'LEFT+1 DOWNTO 1);
 	BEGIN
 	
@@ -178,15 +92,15 @@ ARCHITECTURE sinais OF MIPS32_Testbench IS
 		
 			IF vec(i) = '1' THEN
 			
-				stmp(i+1) := '1';
+				stmp(i + 1) := '1';
 				
 			ELSIF vec(i) = '0' THEN
 			
-				stmp(i+1) := '0';
+				stmp(i + 1) := '0';
 				
 			ELSE
 			
-				stmp(i+1) := 'X';
+				stmp(i + 1) := 'X';
 				
 			END IF;
 			
@@ -199,8 +113,8 @@ ARCHITECTURE sinais OF MIPS32_Testbench IS
 
 BEGIN
 
-	-- Mapeamento de portas do componente MIPS32_Control com sinais do Test Bench
-	UUT_MIPS32_Control: MIPS32_Control PORT MAP                                          			    
+	-- Importaçao e mapeamento de portas do componente MIPS32_Control com sinais do TestBench
+	UUT_MIPS32_Control: ENTITY WORK.MIPS32_Control PORT MAP                                          			    
 	(
 		address			=> SIG_address,
 		dataOUT			=> SIG_dataOUT,
@@ -209,14 +123,19 @@ BEGIN
 		PIN_clockIN		=> SIG_clockIN,
 		opCode			=> SIG_opCode,
 		ready				=> SIG_ready,
+		error				=> SIG_error,
 		reset				=> SIG_reset
 	);	
 	
-	
+					
+					
+				
 	-- Início do controle de clock	
 	P_clockGen: PROCESS IS  
 	BEGIN
 		 	
+		-- 10ns alto e 10ns baixo = 50MHz
+			
 		SIG_clockIN <= '0';   -- Clock em nível baixo por 10 ns
 		
 		WAIT FOR 10 ns; 
@@ -228,134 +147,113 @@ BEGIN
 	END PROCESS P_clockGen;
 	-- Fim do controle de clock
 	
-	
-	
+					
+					
+				
+	-- Início do process para execução do circuito (Carregar dados do arquivo, Executar e Ler Registradores)
 	P_LeREGS: PROCESS IS
-		-- declare and open file (1987 style)
-		FILE vector_file: text IS in "test.vec";
-		VARIABLE file_line : line; -- text line buffer
-		VARIABLE str_stimulus_in: string(32 DOWNTO 1);
-		VARIABLE stimulus_in : std_logic_vector(31 DOWNTO 0);
 		
-		VARIABLE indexByteDataINF : INTEGER;
-		VARIABLE indexByteDataSUP : INTEGER;
+		FILE vector_file: TEXT IS IN "fatorial7.txt";				-- Declara uma variável do tipo arquivo e aponta para o path do arquivo de instruçoes que deverá ser carregado.
+		VARIABLE file_line : LINE; 									-- Armazena uma linha lido do arquivo.
+		VARIABLE str_stimulus_in: STRING(32 DOWNTO 1);			-- Armazena a instruçao da linha lida (32 bites).
+		VARIABLE stimulus_in : STD_LOGIC_VECTOR(31 DOWNTO 0); -- Armazena a instruçao lida pós conversão para STD_LOGIC_VECTOR.
+		
+		VARIABLE indexByteDataINF 	: INTEGER; 						-- Variáveis auxiliares.
+		VARIABLE indexByteDataSUP 	: INTEGER;
+		VARIABLE contAddress 		: INTEGER;
+		
 	BEGIN
 		
-		-- Lê os dados dos Registradores.
 		
-		FOR i IN 0 TO 31 LOOP
+		-- %%%%%%%%%%%%%%% SOLICITAÇAO DE RESET DO MIPS %%%%%%%%%%%%%%%
 		
-			SIG_opCode <= "011";
+		-- Envia ao MIPS opCode para reset do MIPS.
+		SIG_opCode <= "101";
 		
-			SIG_address <= STD_LOGIC_VECTOR(TO_UNSIGNED(i, SIG_dataIN'LENGTH));
+		-- Aguarda primeira borda de subida do clock.
+		WAIT UNTIL RISING_EDGE(SIG_clockOUT);
+			
+		-- Reseta circuito.
+		SIG_reset 		<= '1';
 		
-			-- Aguarda primeira borda de subida do clock.
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);
+		-- Aguarda primeira borda de subida do clock.
+		WAIT UNTIL RISING_EDGE(SIG_clockOUT);			 					
+	
+		SIG_reset 		<= '0';
+		
+		-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+		
+					
+					
 				
-			-- Reseta circuito.
-			SIG_reset 		<= '1';
-			
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);			 					
-
-			SIG_reset 		<= '0';
-			
-			WAIT UNTIL SIG_ready = "00011";
-			
-			
-			SIG_opCode <= "100";
+		-- %%%%%%%%%%%%%%% SOLICITAÇAO DE CARREGAMENTO DAS INSTRUÇOÕES CONTIDAS NO ARQUIVO TEXTO %%%%%%%%%%%%%%%
 		
-			SIG_address <= STD_LOGIC_VECTOR(TO_UNSIGNED(i, SIG_dataIN'LENGTH));
+		-- Inicializa contador de endereço.
+		contAddress := 0;	
 		
-			-- Aguarda primeira borda de subida do clock.
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);
+		-- Percorre todas as linhas do arquivo texto.
+		while NOT ENDFILE(vector_file) LOOP	
+		
+			-- Lê a próxima linha do arquivo.
+			READLINE(vector_file, file_line);
+			
+			-- Extrai dessa linha a instruçao.
+			READ(file_line, str_stimulus_in);
+			
+			-- Converte a instruçao lida para STD_LOGIC_VECTOR.
+			stimulus_in := str2vec(str_stimulus_in);
+			
+			-- Inicializa os índices para leitura e envio dos bytes da instruçao.
+			indexByteDataINF := 0;
+			indexByteDataSUP := 7;
 				
-			-- Reseta circuito.
-			SIG_reset 		<= '1';
+			-- Envia ao MIPS, byte a byte a instruçao lida.
+			FOR i IN 0 TO 3 LOOP
 			
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);			 					
-
-			SIG_reset 		<= '0';
+				-- Envia ao MIPS opCode para envio de instruçao.
+				SIG_opCode <= "001";
 			
-			WAIT UNTIL SIG_ready = "00100";
-			
-			
-			SIG_opCode <= "101";
-		
-			SIG_address <= STD_LOGIC_VECTOR(TO_UNSIGNED(i, SIG_dataIN'LENGTH));
-		
-			-- Aguarda primeira borda de subida do clock.
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);
+				-- Envia endereço onde o byte será escrito.
+				SIG_address <= STD_LOGIC_VECTOR(TO_UNSIGNED(contAddress, SIG_address'LENGTH));
 				
-			-- Reseta circuito.
-			SIG_reset 		<= '1';
-			
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);			 					
-
-			SIG_reset 		<= '0';
-			
-			WAIT UNTIL SIG_ready = "00101";
-			
-			
-			SIG_opCode <= "110";
-		
-			SIG_address <= STD_LOGIC_VECTOR(TO_UNSIGNED(i, SIG_dataIN'LENGTH));
-		
-			-- Aguarda primeira borda de subida do clock.
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);
+				-- Envia byte a ser escrito.
+				SIG_dataIN <= stimulus_in(indexByteDataSUP DOWNTO indexByteDataINF);
 				
-			-- Reseta circuito.
-			SIG_reset 		<= '1';
+				
+				-- Aguarda primeira borda de subida do clock.
+				WAIT UNTIL RISING_EDGE(SIG_clockOUT);
+					
+				-- Reseta circuito.
+				SIG_reset 		<= '1';
+				
+				-- Aguarda primeira borda de subida do clock.
+				WAIT UNTIL RISING_EDGE(SIG_clockOUT);			 					
 			
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);			 					
-
-			SIG_reset 		<= '0';
+				SIG_reset 		<= '0';
 			
-			WAIT UNTIL SIG_ready = "00110";
+		
+				-- Aguarda confirmaçao de conclusão da escrita do byte.
+				WAIT UNTIL SIG_ready = "001";
+				
+				-- Incrementa índices.
+				indexByteDataINF := indexByteDataINF + 8;
+				indexByteDataSUP := indexByteDataSUP + 8;
+				
+				-- Incrementa contador de endereço.
+				contAddress := contAddress + 1;
+				
+			END LOOP;
 			
 		END LOOP;
 		
-		
-		-- Carrega as instruçoes a serem executadas, carregadas em um arquivo texto.
-		
-		-- read one complete line into file_line
-		--readline(vector_file, file_line);
-		-- extract the first field from file_line
-		--read(file_line, str_stimulus_in);
-		-- convert string to vector
-		--stimulus_in := str2vec(str_stimulus_in);
-		
+		-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 			
-		--indexByteDataINF := 0;
-		--indexByteDataSUP := 7;
-		--	
-		--FOR i IN 0 TO 3 LOOP
-		--
-		--	SIG_opCode <= "001";
-		--
-		--	SIG_address <= STD_LOGIC_VECTOR(TO_UNSIGNED(i, SIG_dataIN'LENGTH));
-		--	
-		--	SIG_dataIN <= stimulus_in(indexByteDataSUP DOWNTO indexByteDataINF);
-		--	
-		--	-- Aguarda primeira borda de subida do clock.
-		--	WAIT UNTIL RISING_EDGE(SIG_clockOUT);
-		--		
-		--	-- Reseta circuito.
-		--	SIG_reset 		<= '1';
-		--	
-		--	WAIT UNTIL RISING_EDGE(SIG_clockOUT);			 					
-		--
-		--	SIG_reset 		<= '0';
-		--	
-		--	WAIT UNTIL SIG_ready = "00001";
-		--	
-		--	indexByteDataINF := indexByteDataINF + 8;
-		--	indexByteDataSUP := indexByteDataSUP + 8;
-		--
-		--END LOOP;
-			
+					
+					
 		
-		-- Executa instruçoes carregadas na memória de instruçoes.
+		-- %%%%%%%%%%%%%%% SOLICITAÇAO DE EXECUÇAO DAS INSTRUÇOES CARREGADAS %%%%%%%%%%%%%%%
 		
+		-- Envia ao MIPS opCode para execução das instruçoes.
 		SIG_opCode <= "111";
 		
 		-- Aguarda primeira borda de subida do clock.
@@ -364,93 +262,62 @@ BEGIN
 		-- Reseta circuito.
 		SIG_reset 		<= '1';
 		
+		-- Aguarda primeira borda de subida do clock.
 		WAIT UNTIL RISING_EDGE(SIG_clockOUT);			 					
 
 		SIG_reset 		<= '0';
 		
-		WAIT UNTIL SIG_ready = "01110";
+		-- Aguarda confirmaçao de conclusão da escrita do byte.
+		WAIT UNTIL SIG_ready = "101";
 		
+		-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+		
+					
+					
+		
+		-- %%%%%%%%%%%%%%% SOLICITAÇAO DE LEITURA DE TODOS OS REGISTRADORES %%%%%%%%%%%%%%%
+		
+		-- Percorre todos os registradores.
+		FOR i IN 0 TO 33 LOOP
+		
+			-- Solicita byte a byte o conteúdo do i-ésimo registrador.
+			FOR j IN 0 TO 3 LOOP
 			
-		-- Lê os dados dos Registradores.
-		
-		SIG_opCode <= "010";
-		
-		FOR i IN 2 TO 2 LOOP
-		
-			SIG_opCode <= "011";
-		
-			SIG_address <= STD_LOGIC_VECTOR(TO_UNSIGNED(i, SIG_dataIN'LENGTH));
-		
-			-- Aguarda primeira borda de subida do clock.
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);
+				-- Envia ao MIPS opCode para leitura do Banco de Registradores.
+				SIG_opCode <= "011";
 				
-			-- Reseta circuito.
-			SIG_reset 		<= '1';
-			
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);			 					
-
-			SIG_reset 		<= '0';
-			
-			WAIT UNTIL SIG_ready = "00011";
-			
-			
-			SIG_opCode <= "100";
-		
-			SIG_address <= STD_LOGIC_VECTOR(TO_UNSIGNED(i, SIG_dataIN'LENGTH));
-		
-			-- Aguarda primeira borda de subida do clock.
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);
+				-- Envia o endereço do registrador a ser lido
+				SIG_address <= STD_LOGIC_VECTOR(TO_UNSIGNED(i, SIG_address'LENGTH));
 				
-			-- Reseta circuito.
-			SIG_reset 		<= '1';
-			
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);			 					
-
-			SIG_reset 		<= '0';
-			
-			WAIT UNTIL SIG_ready = "00100";
-			
-			
-			SIG_opCode <= "101";
-		
-			SIG_address <= STD_LOGIC_VECTOR(TO_UNSIGNED(i, SIG_dataIN'LENGTH));
-		
-			-- Aguarda primeira borda de subida do clock.
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);
+				-- Envia qual e o byte que deve ser lido do dado contido no registrador.
+				SIG_dataIN <= STD_LOGIC_VECTOR(TO_UNSIGNED(j, SIG_dataIN'LENGTH));
 				
-			-- Reseta circuito.
-			SIG_reset 		<= '1';
-			
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);			 					
-
-			SIG_reset 		<= '0';
-			
-			WAIT UNTIL SIG_ready = "00101";
-			
-			
-			SIG_opCode <= "110";
-		
-			SIG_address <= STD_LOGIC_VECTOR(TO_UNSIGNED(i, SIG_dataIN'LENGTH));
-		
-			-- Aguarda primeira borda de subida do clock.
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);
 				
-			-- Reseta circuito.
-			SIG_reset 		<= '1';
-			
-			WAIT UNTIL RISING_EDGE(SIG_clockOUT);			 					
+				-- Aguarda primeira borda de subida do clock.
+				WAIT UNTIL RISING_EDGE(SIG_clockOUT);
+					
+				-- Reseta circuito.
+				SIG_reset 		<= '1';
+				
+				-- Aguarda primeira borda de subida do clock.
+				WAIT UNTIL RISING_EDGE(SIG_clockOUT);			 					
 
-			SIG_reset 		<= '0';
+				SIG_reset 		<= '0';
+				
+				-- Aguarda confirmaçao de conclusão da leitura do byte.
+				WAIT UNTIL SIG_ready = "011";
+				
+				END LOOP;
 			
-			WAIT UNTIL SIG_ready = "00110";
-			
-		END LOOP;
+		END LOOP;	
 		
+		-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+		-- Delay até próxima execução do testbench.
 		WAIT FOR 1 sec;
 			
 	END PROCESS P_LeREGS;
 	
 	
-	
-END ARCHITECTURE sinais;
+END ARCHITECTURE BEHAVIOR;
 -- Fim da declaração da arquitetura da entidade MIPS32_Testbench

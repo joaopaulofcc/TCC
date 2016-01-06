@@ -72,6 +72,8 @@ Time dadosRTC;
 #include "About.h"          // Base para tela de informações.
 #include "logoC2ISC.h"      // Logo do C2ISC
 #include "logoIF.h"         // Logo do IFMG.
+#include "logoSomOFF.h"     // Logo de som desligado.
+#include "logoSomON.h"      // Logo de som ligado.
 TVout TV;
 
 
@@ -123,6 +125,9 @@ const int delayFPGA = 1;
 
 // Item escolhido do Menu Principal.
 byte itemMenuPrincipal = 1;
+
+// Item escolhido do Tela HOME.
+byte itemMenuHome = 0;
 
 // Item escolhido do Menu de Registradores.
 byte itemMenuReg = 1;
@@ -200,7 +205,18 @@ const byte pinLedFPGA = 16;   // LED indicador de acessoa ao FPGA
 bool printAviso = true;
 
 // Pino que identifica se o FPGA está ou não conectado.
-const byte pinFPGAPower = 12;
+const byte pinFPGAPower = 17;
+
+
+/*
+ * Declarações para controle do som do buzzer.
+ */
+
+#include "pitches.h"
+
+bool emiteSom = true;             // (true) - permite a emissão de som | (false) - não permite.
+const int tempoNoteBeep = 50;     // Tempo em que a nota do beep será executada.
+#define currentNoteBeep  NOTE_G2  // Nota a ser tocada no beep - vinda do arquivo "pitches.h".
 
 
 /**
@@ -3812,6 +3828,24 @@ void converteInstrucao()
 // ______________________________________________________________________________
 
 
+/*
+ * Método que imprime na tela a logo de som desligado.
+ */
+void printSomOFF()
+{
+  TV.bitmap(105,69,logoSomOFF);
+}
+
+
+/*
+ * Método que imprime na tela a logo de som ligado.
+ */
+void printSomON()
+{
+  TV.bitmap(105,69,logoSomON);
+}
+
+
 /**
  * Procedimento responsável por imprimir a base do layout na tela da TV.
  */
@@ -4300,6 +4334,22 @@ void imprimeBaseRegs3()
   TV.print(20, 23, matrizRegsChar[32]);
   TV.print(20, 32, matrizRegsChar[33]);
 }
+
+
+/*
+ * Método que inverte o logo de som, fornecendo assim a aparência de que tal item está selecionado.
+ */
+void inverteSom()
+{
+  for(int i = 104; i < 116; i++)
+  {
+    for(int j = 68; j < 80; j++)
+    {
+      TV.set_pixel(i, j, 2);
+    }
+  }
+}
+
 
 /**
  * Procedimento que informado um item da área de atualização do RTC, inverte sua cor, 
@@ -4945,7 +4995,7 @@ void setup()
   // Solicita ao MIPS que execute o processo de reset do circuito.
   resetMIPS();
   
-  //Serial.begin(9600);
+  Serial.begin(115200);
 
   // _______________________________________________________________
   
@@ -5144,6 +5194,12 @@ void operaJoystickMenu()
     // OPERAÇÃO QUANDO O JOYSTICK É PRESSIONADO PARA A DIREITA
     if(analogRead(pinRx) < 200)
     {
+      // Emite ou não bipe.
+      if(emiteSom)
+      {
+        TV.tone(currentNoteBeep, tempoNoteBeep);
+      }
+      
       // Caso o menu atual seja o principal.
       if(menuAtual == 1)
       {
@@ -5248,6 +5304,12 @@ void operaJoystickMenu()
     // OPERAÇÃO QUANDO O JOYSTICK É PRESSIONADO PARA A ESQUERDA
     else if(analogRead(pinRx) > 1000)
     {
+      // Emite ou não bipe.
+      if(emiteSom)
+      {
+        TV.tone(currentNoteBeep, tempoNoteBeep);
+      }
+      
       // Caso o menu atual seja o principal.
       if(menuAtual == 1)
       {
@@ -5351,9 +5413,34 @@ void operaJoystickMenu()
     // OPERAÇÃO QUANDO O JOYSTICK É PRESSIONADO PARA BAIXO
     else if(analogRead(pinRy) > 1000)
     {
+      // Emite ou não bipe.
+      if(emiteSom)
+      {
+        TV.tone(currentNoteBeep, tempoNoteBeep);
+      }
+      
       // Operações de acordo com a tela em exibição.
       switch (telaAtual)
       {
+        case 1:
+
+          // Verifica se é a primeira vez que o usuário pressionou o joystick para baixo na tela atual.
+          if(primeiraVezBaixo)
+          {
+            // Inverte flags.
+            primeiraVezBaixo = false;
+            primeiraVezCima = true;
+  
+            itemMenuHome = 1;
+            
+            // Inverte faixa identificadora do item atual no menu principal (indica que o item não está em foco).
+            inverteItensMenuPrincipalFaixa(itemMenuPrincipal);
+  
+            inverteSom();
+          }
+          
+          break;
+        
         // Tela OPEN.
         case 2:
 
@@ -5389,7 +5476,7 @@ void operaJoystickMenu()
 
           // Verifica se é a primeira vez que o usuário pressionou o joystick para baixo na tela atual.
           if(primeiraVezBaixo)
-          {
+          {        
             // Inverte flags.
             primeiraVezBaixo = false;
             primeiraVezCima = true;
@@ -5492,7 +5579,7 @@ void operaJoystickMenu()
 
         // Tela de ajuste do DIA do RTC.
         case 7:
-
+        
           // Caso o valor de DIA seja igual ao mínimo (1), retorna o valor para o máximo (31), 
           // caso contrário, decrementa e chama método para atualizar o RTC com os novos valores.
           if(diaRTC == 1)
@@ -5618,30 +5705,31 @@ void operaJoystickMenu()
     // OPERAÇÃO QUANDO O JOYSTICK É PRESSIONADO PARA CIMA
     else if(analogRead(pinRy) < 200)
     {
+      // Emite ou não bipe.
+      if(emiteSom)
+      {
+        TV.tone(currentNoteBeep, tempoNoteBeep);
+      }
+      
       // Operações de acordo com a tela em exibição.
       switch (telaAtual)
       {
         // Tela HOME.
         case 1:
 
-          // Verifica se é a primeira vez que o usuário pressionou o joystick para cima na tela atual.
+          // Verifica se é a primeira vez que o usuário pressionou o joystick para baixo na tela atual.
           if(primeiraVezCima)
           {
             // Inverte flags.
-            primeiraVezCima = false;
             primeiraVezBaixo = true;
-
-            // Inverte faixa identificadora do item atual no menu principal (indica que o item está em foco).
+            primeiraVezCima = false;
+  
+            itemMenuHome = 0;
+            
+            // Inverte faixa identificadora do item atual no menu principal (indica que o item não está em foco).
             inverteItensMenuPrincipalFaixa(itemMenuPrincipal);
-
-            // Atualiza menu atual, apontando para o principal.
-            menuAtual = 1;
-
-            // Reseta o apontador de item do menu principal para o primeiro item.
-            itemMenuPrincipal = 1;
-
-            // Inverte item selecionado previamente do RTC.
-            inverteItemRTC(itemRTC);
+  
+            inverteSom();
           }
 
           break;
@@ -5872,7 +5960,7 @@ void operaJoystickMenu()
 
         // Tela de ajuste dos SEGUNDOS do RTC.
         case 13:
-
+        
           // Caso o valor de SEGUNDOS seja igual ao máximo (59), retorna o valor para o minimo (0), 
           // caso contrário, incrementa e chama método para atualizar o RTC com os novos valores.
           if(segRTC == 59)
@@ -5895,19 +5983,45 @@ void operaJoystickMenu()
     // OPERAÇÃO QUANDO O JOYSTICK É PRESSIONADO PARA BAIXO (SWITCH)
     else if (analogRead(pinSw) < 100)
     {
+      // Emite ou não bipe.
+      if(emiteSom)
+      {
+        TV.tone(currentNoteBeep, tempoNoteBeep);
+      }
+      
       // Operações de acordo com a tela em exibição.
       switch (telaAtual)
       {
          // Tela HOME.
         case 1:
 
-          // Verifica se é a primeira vez que o usuário pressionou o joystick para baixo na tela atual.
-          if(primeiraVezBaixo)
+          // Caso esteja selecionado o logo de som.
+          if(itemMenuHome == 1)
           {
-            // Inverte flags.
-            primeiraVezBaixo = false;
-            primeiraVezCima = true;
+            // Ativa ou desativa o som.
+            emiteSom = !emiteSom;
 
+            // Inverte o logo, ficando preto.
+            inverteSom();
+
+            // Imprime o novo logo.
+            if(emiteSom)
+            {
+              printSomON();
+
+              TV.tone(currentNoteBeep, tempoNoteBeep);
+            }
+            else
+            {
+              printSomOFF(); 
+            }
+
+            // Inverte novamente o logo para ficar selecionado igual antes, ou seja, branco.
+            inverteSom();
+          }
+          // Caso seja o menu principal, ou seja, para ajustar o RTC.
+          else
+          {
             // Inverte faixa identificadora do item atual no menu principal (indica que o item não está em foco).
             inverteItensMenuPrincipalFaixa(itemMenuPrincipal);
 
@@ -5958,7 +6072,7 @@ void operaJoystickMenu()
 
         // Tela REG.
         case 3:
-
+        
           // Filtra por item selecionado na tela REG.
           switch(itemMenuReg)
           {
@@ -6147,7 +6261,7 @@ void operaJoystickMenu()
 
             // Backspace.
             case 5:
-
+            
               // Inverte item atual (deixa preto).
               inverteItemMenuMem(5);
 
@@ -6379,6 +6493,8 @@ void enviaInstrucao()
   byte contAddress = 0;
   byte base = 0;
   
+  char teste[32];
+  
   resetMIPS();
  
   // Liga LED de acesso ao FPGA.
@@ -6392,6 +6508,11 @@ void enviaInstrucao()
 
     // Chama método para conversão da instrução para o binário do MIPS.
     converteInstrucao(); 
+
+    // Converte bytes lidos para string e armazena o resultado no vetor de caracteres "binCharREG", para ser impresso na tela.
+    sprintf(teste, "%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i", instrucaoBytes[31], instrucaoBytes[30], instrucaoBytes[29], instrucaoBytes[28], instrucaoBytes[27], instrucaoBytes[26], instrucaoBytes[25],instrucaoBytes[24], instrucaoBytes[23], instrucaoBytes[22], instrucaoBytes[21], instrucaoBytes[20], instrucaoBytes[19], instrucaoBytes[18], instrucaoBytes[17], instrucaoBytes[16], instrucaoBytes[15], instrucaoBytes[14], instrucaoBytes[13], instrucaoBytes[12], instrucaoBytes[11], instrucaoBytes[10], instrucaoBytes[9], instrucaoBytes[8], instrucaoBytes[7], instrucaoBytes[6], instrucaoBytes[5], instrucaoBytes[4], instrucaoBytes[3], instrucaoBytes[2], instrucaoBytes[1], instrucaoBytes[0]);
+
+    Serial.println(teste);
 
     base = 0;
 
@@ -6563,8 +6684,18 @@ void loop()
           printBase();
   
           // Imprime o logo do MIPSDUINO
-          TV.bitmap(3,20,logoMIPSDUINO);
-  
+          TV.bitmap(3,15,logoMIPSDUINO);
+
+          // Imprime logo de som.
+          if(emiteSom)
+          {
+            printSomON();
+          }
+          else
+          {
+            printSomOFF(); 
+          }
+          
           // Imprime reta para divisão dos dados do RTC na tela.
           TV.draw_line(0, 82, 118, 82, 1);
         }
