@@ -40,6 +40,7 @@ ENTITY MIPS32_RamInst IS
 	(
 		clock		: IN 	STD_LOGIC;			-- Sinal de clock.
 		we			: IN 	STD_LOGIC := '1';	--	Sinal de Write Enable (1 - Leitura | 0 - Escrtia), default = 1.
+		reset		: IN 	STD_LOGIC := '0';	-- Sinal de Reset da memória.
 		address	: IN 	t_AddressINST;		-- Endereço da posição de memória a ser Escrita/Lida.
 		dataIn	: IN 	t_Byte;				-- Dado a ser escrito na RAM.
 		dataOut	: OUT t_Byte				-- Dado lido da RAM.
@@ -61,7 +62,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_RamInst IS
 	
 		FOR addr_pos IN 0 TO 2 ** ADDRESS_INST_WIDTH - 1 LOOP
 		
-			tmp(addr_pos) := STD_LOGIC_VECTOR(TO_UNSIGNED(0, DATA_WIDTH));
+			tmp(addr_pos) := x"00"; --STD_LOGIC_VECTOR(TO_UNSIGNED(0, DATA_WIDTH));
 			
 		END LOOP;
 		
@@ -74,12 +75,17 @@ ARCHITECTURE BEHAVIOR OF MIPS32_RamInst IS
 		
 BEGIN
 	
-	-- Process que permite que o circuito seja síncrono, é ativado por alteraçao de valores no sinal "clock".
-	PROCESS(clock)
+	-- Process que permite que o circuito seja síncrono, é ativado por alteraçao de valores no sinal "clock" e "reset".
+	PROCESS(clock, reset)
 	BEGIN
 	
+		-- Caso o sinal de reset esteja em nível alto, aciona a funçao de preenchimento da memória com valores default.
+		IF(reset = '1') THEN
+		
+			ram <= init_ram;
+	
 		-- Caso seja borda de subida do sinal "clock".
-		IF(RISING_EDGE(clock)) THEN
+		ELSIF(RISING_EDGE(clock)) THEN
 		
 			-- Escreve dado na posiçao especifica da RAM.
 			IF(we = '0') THEN

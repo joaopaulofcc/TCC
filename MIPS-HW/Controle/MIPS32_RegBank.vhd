@@ -46,6 +46,8 @@ ENTITY MIPS32_RegBank IS
 																						-- (00 - escreve no 1º registrador   | 01 - escreve no 2º registrador |
 																						-- (10 - escreve nos 2 registradores | 11 - lê os dois registradores )
 																						
+		reset			: IN 	STD_LOGIC := '0';								-- Sinal de Reset dos registradores.
+																						
 		regRead1		: IN 	t_RegSelect;									-- Endereço do 1º registrador a ser lido.
 		regRead2		: IN 	t_RegSelect;									-- Endereço do 2º registrador a ser lido.
 		
@@ -75,7 +77,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_RegBank IS
 	
 		FOR addr_pos IN 0 TO QTD_GPRs - 1 LOOP
 		
-			tmp(addr_pos) := STD_LOGIC_VECTOR(TO_UNSIGNED(addr_pos, REGISTER_WIDTH));
+			tmp(addr_pos) := x"00000000"; --STD_LOGIC_VECTOR(TO_UNSIGNED(0, REGISTER_WIDTH));
 			
 		END LOOP;
 		
@@ -88,12 +90,17 @@ ARCHITECTURE BEHAVIOR OF MIPS32_RegBank IS
 
 BEGIN
 	
-	-- Process que permite que o circuito seja síncrono, é ativado por alteraçao de valores no sinal "clock".
-	PROCESS(clock)
+	-- Process que permite que o circuito seja síncrono, é ativado por alteraçao de valores no sinal "clock" e "reset".
+	PROCESS(clock, reset)
 	BEGIN
 		
+		-- Caso o sinal de reset esteja em nível alto, aciona a funçao de preenchimento dos registradores com valores default.
+		IF(reset = '1') THEN
+		
+			registers <= init_reg;
+			
 		-- Caso seja borda de subida do sinal "clock".
-		IF(RISING_EDGE(clock)) THEN
+		ELSIF(RISING_EDGE(clock)) THEN
 		
 			-- Escreve no primeiro registrador.
 			IF(we = "00") THEN

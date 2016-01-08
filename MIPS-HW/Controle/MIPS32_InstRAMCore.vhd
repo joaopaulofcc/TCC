@@ -70,6 +70,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_InstRAMCore IS
 	-- Sinais para conexao com o componente RAM de Instruções.
 	SIGNAL SIG_RAM_INST_clock 		:  STD_LOGIC;
 	SIGNAL SIG_RAM_INST_we			:  STD_LOGIC;
+	SIGNAL SIG_RAM_INST_reset		:  STD_LOGIC;
 	SIGNAL SIG_RAM_INST_address 	:  t_AddressINST;
 	SIGNAL SIG_RAM_INST_dataIn 	:  t_Byte;
 	SIGNAL SIG_RAM_INST_dataOut 	:  t_Byte;
@@ -78,6 +79,8 @@ ARCHITECTURE BEHAVIOR OF MIPS32_InstRAMCore IS
 	-- Máquina de estados da controladora.
 	
 		-- state_IRC_IDLE					: Estado de IDLE geral da entidade.
+		
+		-- state_IRC_Reset				: Estado de Reset da memória.
 		
 		--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||
 		
@@ -112,7 +115,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_InstRAMCore IS
 		-- 									  para o circuito solicitante da operaçao, formando assim a instruçao atual lida.
 	
 	-- Declaração da máquina de estados para controle do circuito.
-	TYPE InstRAMCore_FSM IS(state_IRC_IDLE,
+	TYPE InstRAMCore_FSM IS(state_IRC_IDLE,			state_IRC_Reset,
 	
 									state_IRC_Write_IDLE,   state_IRC_Write_Solicita, state_IRC_Write_Encerra,
 									
@@ -126,7 +129,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_InstRAMCore IS
 									state_IRC_IF_Envia
 									);
 	
-	SIGNAL currentState	: InstRAMCore_FSM := state_IRC_IDLE; -- Define o estado inicial da máquina como sendo o "state_IRC_IDLE".
+	SIGNAL nextState	: InstRAMCore_FSM := state_IRC_IDLE; -- Define o estado inicial da máquina como sendo o "state_IRC_IDLE".
 	
 	-- Sinais para conexão com barramentos externos do circuito, evitando assim que flutuaçoes na entrada propaguem no circuito.
 	SIGNAL SIG_address	: t_AddressINST;
@@ -147,6 +150,7 @@ BEGIN
 		(
 			clock		=> SIG_RAM_INST_clock,
 			we			=> SIG_RAM_INST_we,
+			reset		=> SIG_RAM_INST_reset,
 			address	=> SIG_RAM_INST_address,
 			dataIn	=> SIG_RAM_INST_dataIn,
 			dataOut	=> SIG_RAM_INST_dataOut
@@ -187,22 +191,27 @@ BEGIN
 				-- Circuito ocioso, ou em IDLE.
 				WHEN "000" =>
 				
-					currentState <= state_IRC_IDLE;
+					nextState <= state_IRC_IDLE;
 				
 				-- Leitura de instruçao da RAM.
 				WHEN "001" =>
 				
-					currentState <= state_IRC_IF_Solicita1;
+					nextState <= state_IRC_IF_Solicita1;
 				
 				-- Escrita de byte na RAM.
 				WHEN "010" =>
 				
-					currentState <= state_IRC_Write_Solicita;
+					nextState <= state_IRC_Write_Solicita;
 					
 				-- Leitura de byte da RAM.	
 				WHEN "011" =>
 				
-					currentState <= state_IRC_Read_Solicita;
+					nextState <= state_IRC_Read_Solicita;
+					
+				-- Estado de Reset da RAM.
+				WHEN "100" =>
+				
+					nextState <= state_IRC_Reset;
 					
 				-- Estados invalidos.
 				WHEN OTHERS =>
@@ -214,8 +223,8 @@ BEGIN
 		-- Caso o sinal de reset não esteja ativo (alto) e seja borda de subida do clock, executa os comandos da FSM.
 		ELSIF (RISING_EDGE(clock)) THEN
 		
-			-- Filtra de acordo com o estado atual da FSM apontado por "currentState".
-			CASE currentState IS
+			-- Filtra de acordo com o estado atual da FSM apontado por "nextState".
+			CASE nextState IS
 			
 				-- Estado de IDLE geral da controladora.
 				WHEN state_IRC_IDLE =>
@@ -224,9 +233,28 @@ BEGIN
 					SIG_stateOut1 <= "1111";
 					SIG_stateOut2 <= "1111";
 					
+					-- Mantém nível baixo no sinal de reset da memória.
+					SIG_RAM_INST_reset <= '0';
+					
 					-- Encaminha a FSM para o próprio estado atual.
-					currentState <= state_IRC_IDLE;
+					nextState <= state_IRC_IDLE;
 			
+				
+				-- %%	
+			
+			
+				-- Estado de reset da memória.
+				WHEN state_IRC_Reset =>
+				
+					-- Sinaliza no barramento de debug o estado atual da FSM.
+					SIG_stateOut1 <= "1111";
+					SIG_stateOut2 <= "1110";
+				
+					-- Mantém nível alto no sinal de reset da memória.
+					SIG_RAM_INST_reset <= '1';
+				
+					nextState <= state_IRC_IDLE;
+					
 					
 					
 					
@@ -243,7 +271,7 @@ BEGIN
 					SIG_ready <= "000";
 				
 					-- Encaminha a FSM para o próprio estado atual.
-					currentState <= state_IRC_IF_IDLE;
+					nextState <= state_IRC_IF_IDLE;
 				
 				
 				-- %%	
@@ -265,7 +293,7 @@ BEGIN
 					SIG_RAM_INST_address <= SIG_address;		-- Envia o valor presente no barramento "address" desse circuito para a memória informando o endereço a ser lido.
 					
 					-- Encaminha a FSM para o estado de Busca do primeiro byte da instruçao.
-					currentState <= state_IRC_IF_Busca1;
+					nextState <= state_IRC_IF_Busca1;
 					
 				
 				-- %%	
@@ -285,7 +313,7 @@ BEGIN
 					byte0 := SIG_RAM_INST_dataOut;
 					
 					-- Encaminha a FSM para o estado de solicitaçao de leitura do segundo byte.
-					currentState <= state_IRC_IF_Solicita2;
+					nextState <= state_IRC_IF_Solicita2;
 				
 				
 				-- %%	
@@ -307,7 +335,7 @@ BEGIN
 					SIG_RAM_INST_address <= SIG_address + 1;	-- Envia o valor presente no barramento "address" + 1 desse circuito para a memória informando o endereço a ser lido.
 					
 					-- Encaminha a FSM para o estado de Busca do segundo byte da instruçao.
-					currentState <= state_IRC_IF_Busca2;
+					nextState <= state_IRC_IF_Busca2;
 					
 				
 				-- %%	
@@ -328,7 +356,7 @@ BEGIN
 					
 					
 					-- Encaminha a FSM para o estado de solicitaçao de leitura do segundo byte.
-					currentState <= state_IRC_IF_Solicita3;
+					nextState <= state_IRC_IF_Solicita3;
 					
 				
 				-- %%	
@@ -350,7 +378,7 @@ BEGIN
 					SIG_RAM_INST_address <= SIG_address + 2;	-- Envia o valor presente no barramento "address" + 2 desse circuito para a memória informando o endereço a ser lido.
 					
 					-- Encaminha a FSM para o estado de Busca do terceiro byte da instruçao.
-					currentState <= state_IRC_IF_Busca3;
+					nextState <= state_IRC_IF_Busca3;
 				
 				
 				-- %%	
@@ -370,7 +398,7 @@ BEGIN
 					byte2 := SIG_RAM_INST_dataOut;
 					
 					-- Encaminha a FSM para o estado de solicitaçao de leitura do segundo byte.
-					currentState <= state_IRC_IF_Solicita4;
+					nextState <= state_IRC_IF_Solicita4;
 					
 				
 				-- %%	
@@ -392,7 +420,7 @@ BEGIN
 					SIG_RAM_INST_address <= SIG_address + 3;	-- Envia o valor presente no barramento "address" + 3 desse circuito para a memória informando o endereço a ser lido.
 					
 					-- Encaminha a FSM para o estado de Busca do quarto byte da instruçao.
-					currentState <= state_IRC_IF_Busca4;
+					nextState <= state_IRC_IF_Busca4;
 					
 				
 				-- %%	
@@ -412,7 +440,7 @@ BEGIN
 					byte3 := SIG_RAM_INST_dataOut;
 					
 					-- Encaminha a FSM para o estado de envio de todos os bytes lidos da memória, formando a instruçao atual.
-					currentState <= state_IRC_IF_Envia;
+					nextState <= state_IRC_IF_Envia;
 					
 				
 				-- %%	
@@ -433,7 +461,7 @@ BEGIN
 					SIG_ready <= "001";
 					
 					-- Encaminha a FSM para o estado IDLE do processo de leitura de instruçao.
-					currentState <= state_IRC_IF_IDLE;
+					nextState <= state_IRC_IF_IDLE;
 					
 				-- %%%%%%%%%%%%%%% FIM DA FSM PARA LEITURA DE INSTRUCAO %%%%%%%%%%%%%%%	
 				
@@ -456,7 +484,7 @@ BEGIN
 					SIG_ready <= "000";
 	
 					-- Encaminha a FSM para o próprio estado atual.
-					currentState <= state_IRC_Write_IDLE;
+					nextState <= state_IRC_Write_IDLE;
 					
 				
 				-- %%	
@@ -478,7 +506,7 @@ BEGIN
 					SIG_RAM_INST_dataIn 	<= SIG_dataIn;		-- Envia o valor presente no barramento "dataIn" desse circuito para a memória informando o valor que será escrito.
 					
 					-- Encaminha a FSM para de encerramento da escrita de byte.
-					currentState <= state_IRC_Write_Encerra;
+					nextState <= state_IRC_Write_Encerra;
 					
 				
 				-- %%	
@@ -495,7 +523,7 @@ BEGIN
 					SIG_ready <= "010";
 					
 					-- Encaminha a FSM para o estado IDLE do processo de escrita de byte.
-					currentState <= state_IRC_Write_IDLE;
+					nextState <= state_IRC_Write_IDLE;
 					
 				-- %%%%%%%%%%%%%%% FIM DA FSM PARA ESCRITA DE BYTE %%%%%%%%%%%%%%%	
 				
@@ -515,7 +543,7 @@ BEGIN
 					SIG_ready <= "000";
 				
 					-- Encaminha a FSM para o próprio estado atual.
-					currentState <= state_IRC_Read_IDLE;
+					nextState <= state_IRC_Read_IDLE;
 				
 				
 				-- %%	
@@ -537,7 +565,7 @@ BEGIN
 					SIG_RAM_INST_dataIn	<= (OTHERS => '0');	-- Garante o valor '0' no barramento de dados.
 					
 					-- Encaminha a FSM para o estado de envio do byte lido.
-					currentState <= state_IRC_Read_Envia;
+					nextState <= state_IRC_Read_Envia;
 					
 				
 				-- %%	
@@ -557,7 +585,7 @@ BEGIN
 					SIG_ready <= "011";
 				
 					-- Encaminha a FSM para o estado IDLE do processo de leitura de byte.
-					currentState <= state_IRC_Read_IDLE;
+					nextState <= state_IRC_Read_IDLE;
 					
 				-- %%%%%%%%%%%%%%% FIM DA FSM PARA LEITURA DE BYTE %%%%%%%%%%%%%%%
 					

@@ -107,17 +107,14 @@ Keypad myKeypad = Keypad(makeKeymap(keymap), rowPins, colPins, numRows, numCols)
  * --------------- CONSTANTES ---------------
  */
 
-// Constante para definição do número máximo de linhas exibidas em um arquivo.
-#define MAX_QTD_LINES 255
+// Constante para definição do número máximo de linhas presentes em um arquivo do cartão SD que serão exibidas e processadas.
+#define MAX_QTD_LINES 64
 
 // Constante para definição do número máximo de arquivos presentes no SD que serão exibidos.
 #define MAX_QTD_FILES 8
 
-// Constante para definição do número máximo de linhas presentes em um arquivo do cartão SD que serão exibidas e processadas.
-#define MAX_LINES_SD 64
-
 // Tempo em microssegundos utilizado para sincronização com o clock da FPGA.
-const int delayFPGA = 1;
+const int delayFPGA = 100;
 
 /**
  * --------------- VARIAVEIS ---------------
@@ -203,6 +200,9 @@ const byte pinLedFPGA = 16;   // LED indicador de acessoa ao FPGA
 
 // Flag que controla a impressão da tela de aviso caso o FPGA esteja desconectado.
 bool printAviso = true;
+
+// Flag que quando verdadeira indica ao Arduino resetar o MIPS, após esse, que encontrava-se desligado, ser novamente ligado.
+bool resetFPGAOff = false;
 
 // Pino que identifica se o FPGA está ou não conectado.
 const byte pinFPGAPower = 17;
@@ -323,6 +323,175 @@ byte instrucaoBytes[32];
 String stringsInstrucao[6];
 
 
+
+/*
+ * Funções para reprodução de RTTTL
+ * 
+ * Adaptado de <http://forum.arduino.cc/index.php?topic=53358.0>
+ */
+
+// Som produzido pela conversão de "IFMG2016" em http://www.r2d2translator.com/
+char *R2D2Start = "ola:d=4,o=5,b=120:84b7,42c6,42p,32p.,32p.,32p.,84d#8,84p,84p,84p,84p,84p,84p,84p,84p,84p,84p,84g8,84p,84p,84e8,42e7,17p,12p,84e8,84p,84a#7,12p,12p,12p,84f#8,42g8,17p,84g8,84p,84p,42f#8,42p,42p,84d#8";
+char *R2D2Error = "aefb28e1k0:d=4,o=5,b=120:84g7,84p,84p,84p,84g#7,84c#7,84c8,84p,84c#8,84p,42d8,84p,42d#8,84c8,28p,42d#8,28p,17p,17p,17p,17p,17p,17p,84b7,42c6,84p,84c8,84p,84c#8,42b6";
+char *R2D2Ok    = "yes:d=4,o=5,b=120:84g#7,84p,42a7,42p,84c8,84c#8,84p,84b7,84p,42d8,42p,42p,28p,28p,28p,28p,28p,32p.,14p,14p,14p,84d8,84p,42e8,42p,84f#8,84p,84g8,84p,84p,84p,84p,84b7";
+
+#define isdigit(n) (n >= '0' && n <= '9')
+#define OCTAVE_OFFSET 0
+
+// These values can also be found as constants in the Tone library (Tone.h)
+int notes[] = { 0,
+262, 277, 294, 311, 330, 349, 370, 392, 415, 440, 466, 494,
+523, 554, 587, 622, 659, 698, 740, 784, 831, 880, 932, 988,
+1047, 1109, 1175, 1245, 1319, 1397, 1480, 1568, 1661, 1760, 1865, 1976,
+2093, 2217, 2349, 2489, 2637, 2794, 2960, 3136, 3322, 3520, 3729, 3951
+};
+
+void play_rtttl(char *p)
+{
+  // Absolutely no error checking in here
+
+  byte default_dur = 4;
+  byte default_oct = 6;
+  int bpm = 63;
+  int num;
+  long wholenote;
+  long duration;
+  byte note;
+  byte scale;
+
+  // format: d=N,o=N,b=NNN:
+  // find the start (skip name, etc)
+
+  while(*p != ':') p++;    // ignore name
+  p++;                     // skip ':'
+
+  // get default duration
+  if(*p == 'd')
+  {
+    p++; p++;              // skip "d="
+    num = 0;
+    while(isdigit(*p))
+    {
+      num = (num * 10) + (*p++ - '0');
+    }
+    if(num > 0) default_dur = num;
+    p++;                   // skip comma
+  }
+
+  // get default octave
+  if(*p == 'o')
+  {
+    p++; p++;              // skip "o="
+    num = *p++ - '0';
+    if(num >= 3 && num <=7) default_oct = num;
+    p++;                   // skip comma
+  }
+
+  // get BPM
+  if(*p == 'b')
+  {
+    p++; p++;              // skip "b="
+    num = 0;
+    while(isdigit(*p))
+    {
+      num = (num * 10) + (*p++ - '0');
+    }
+    bpm = num;
+    p++;                   // skip colon
+  }
+
+  // BPM usually expresses the number of quarter notes per minute
+  wholenote = (60 * 1000L / bpm) * 4;  // this is the time for whole note (in milliseconds)
+
+  // now begin note loop
+  while(*p)
+  {
+    // first, get note duration, if available
+    num = 0;
+    while(isdigit(*p))
+    {
+      num = (num * 10) + (*p++ - '0');
+    }
+    
+    if(num) duration = wholenote / num;
+    else duration = wholenote / default_dur;  // we will need to check if we are a dotted note after
+
+    // now get the note
+    note = 0;
+
+    switch(*p)
+    {
+      case 'c':
+        note = 1;
+        break;
+      case 'd':
+        note = 3;
+        break;
+      case 'e':
+        note = 5;
+        break;
+      case 'f':
+        note = 6;
+        break;
+      case 'g':
+        note = 8;
+        break;
+      case 'a':
+        note = 10;
+        break;
+      case 'b':
+        note = 12;
+        break;
+      case 'p':
+      default:
+        note = 0;
+    }
+    p++;
+
+    // now, get optional '#' sharp
+    if(*p == '#')
+    {
+      note++;
+      p++;
+    }
+
+    // now, get optional '.' dotted note
+    if(*p == '.')
+    {
+      duration += duration/2;
+      p++;
+    }
+  
+    // now, get scale
+    if(isdigit(*p))
+    {
+      scale = *p - '0';
+      p++;
+    }
+    else
+    {
+      scale = default_oct;
+    }
+
+    scale += OCTAVE_OFFSET;
+
+    if(*p == ',')
+      p++;       // skip comma for next note (or we may be at the end)
+
+    // now play the note
+
+    if(note)
+    {
+      TV.tone(notes[(scale - 4) * 12 + note]);
+      delay(duration);
+      TV.noTone();
+    }
+    else
+    {
+      delay(duration);
+    }
+  }
+}
 
 
 /*
@@ -4016,6 +4185,15 @@ void imprimeBaseOpen()
 
   itemOpen = 0;
 
+  if (!SD.begin(53)) 
+  {
+    sdInserido = false;
+  }
+  else
+  {
+    sdInserido = true;
+  }
+
   // Caso o cartão esteja inserido, prepara para chamada do método de listagem dos arquivos
   // contidos no SD.
   if(sdInserido)
@@ -4060,6 +4238,9 @@ void carregaVetorSD(String path)
   char pathChar[path.length()+1];
   path.toCharArray(pathChar, sizeof(pathChar));
 
+  // Liga o LED de acesso ao SD.
+  digitalWrite2(pinLedSD, HIGH);
+
   // Abre o arquivo.
   arquivoSD = SD.open(pathChar);  
 
@@ -4090,14 +4271,17 @@ void carregaVetorSD(String path)
       linhasSD[posVetor] += charLido;
     }
 
-    if(contLinhasSD > MAX_LINES_SD)
+    if(contLinhasSD > MAX_QTD_LINES)
     {
-      contLinhasSD = MAX_LINES_SD;
+      contLinhasSD = MAX_QTD_LINES;
     }
   }
   
   // Ao final da leitura fecha o arquivo.
   arquivoSD.close();
+
+  // Desliga o LED de acesso ao SD.
+  digitalWrite2(pinLedSD, LOW);
 }
 
 
@@ -4233,10 +4417,14 @@ void imprimeBaseRegs1()
   TV.print(62, 68, "13");
   TV.print(62, 77, "14");
   TV.print(62, 86, "15");
+}
 
 
-  
-
+/*
+ * Método responsável por imprimir os valores dos registradores exibidos na tela 1.
+ */
+void imprimeValuesRegs1()
+{
   TV.print(20, 23, matrizRegsChar[0]);
   TV.print(20, 32, matrizRegsChar[1]);
   TV.print(20, 41, matrizRegsChar[2]);
@@ -4292,7 +4480,14 @@ void imprimeBaseRegs2()
   TV.print(62, 68, "29");
   TV.print(62, 77, "30");
   TV.print(62, 86, "31");
+}
 
+
+/*
+ * Método responsável por imprimir os valores dos registradores exibidos na tela 2.
+ */
+void imprimeValuesRegs2()
+{
   TV.print(20, 23, matrizRegsChar[16]);
   TV.print(20, 32, matrizRegsChar[17]);
   TV.print(20, 41, matrizRegsChar[18]);
@@ -4330,9 +4525,28 @@ void imprimeBaseRegs3()
   // Imprime strings presentes na tela.
   TV.print(3, 23, "HI");
   TV.print(3, 32, "LO");
+}
 
+
+/*
+ * Método responsável por imprimir os valores dos registradores exibidos na tela 3.
+ */
+void imprimeValuesRegs3()
+{
   TV.print(20, 23, matrizRegsChar[32]);
   TV.print(20, 32, matrizRegsChar[33]);
+}
+
+
+/*
+ * Método utilizado para inicializar a matriz com dados dos registradores com o valor nulo.
+ */
+void inicializaMatrizRegs()
+{
+  for(int i = 0; i < 34; i++)
+  {
+    strcpy(matrizRegsChar[i], "");
+  }
 }
 
 
@@ -4995,7 +5209,7 @@ void setup()
   // Solicita ao MIPS que execute o processo de reset do circuito.
   resetMIPS();
   
-  Serial.begin(115200);
+  //Serial.begin(115200);
 
   // _______________________________________________________________
   
@@ -5004,14 +5218,7 @@ void setup()
 
   // Configuração do SD.
   pinMode2(53, OUTPUT);
-  if (!SD.begin(53)) 
-  {
-    sdInserido = false;
-  }
-  else
-  {
-    sdInserido = true;
-  }
+
   
   // Configuração do RTC.
   rtc.halt(false);
@@ -5033,26 +5240,29 @@ void setup()
 
   digitalWrite2(pinLedPOWER, HIGH);
 
-  // Imprime logotipos na tela.
-  //TV.clear_screen();
-  //TV.bitmap(30,0,logoIFGrande);
+  // Reproduz sample de início.
+  play_rtttl(R2D2Start);
 
-  //for(int i = 0; i < 15; i ++)
-  //{
- //   TV.shift(1, 1);
-  //  TV.delay(70);
-  //}
+  // Imprime logotipos na tela.
+  TV.clear_screen();
+  TV.bitmap(30,0,logoIF);
+
+  for(int i = 0; i < 15; i ++)
+  {
+    TV.shift(1, 1);
+    TV.delay(70);
+  }
 
   // Seleciona fonte.
   TV.select_font(font8x8);
 
-  //TV.print(42, 0, "IFMG");
-  //TV.print(2, 80, "campus Formiga");
-  //TV.delay(5000);
+  TV.print(42, 0, "IFMG");
+  TV.print(2, 80, "campus Formiga");
+  TV.delay(5000);
 
-  //TV.clear_screen();
-  //TV.bitmap(4,20,C2Grande);
-  //TV.delay(5000);
+  TV.clear_screen();
+  TV.bitmap(4,20,logoC2ISC);
+  TV.delay(5000);
 
   // Imprime fundo base.
   printBase();
@@ -6062,6 +6272,7 @@ void operaJoystickMenu()
           // Já seleciona o item nº 1 da tela de exibição.
           itemMenuShow = 1;
           inverteItemShowFile(itemMenuShow);
+          inverteItensMenuPrincipalFaixa(itemMenuPrincipal);
           primeiraVezBaixo = false;
           primeiraVezCima = true;
 
@@ -6090,6 +6301,9 @@ void operaJoystickMenu()
                   // Imprime tela com primeiro conjunto de registradores.
                   imprimeBaseRegs1();
 
+                  // Imprime valores dos registradores.
+                  imprimeValuesRegs1();
+
                   // Inverte seta atual , continuando invertida assim, a seta selecionada na tela anterior.
                   inverteItemRegs(itemMenuReg);
       
@@ -6102,6 +6316,9 @@ void operaJoystickMenu()
 
                   // Imprime tela com segundo conjunto de registradores.
                   imprimeBaseRegs2();
+
+                  // Imprime valores dos registradores.
+                  imprimeValuesRegs2();
 
                   // Inverte seta atual , continuando invertida assim, a seta selecionada na tela anterior.
                   inverteItemRegs(itemMenuReg);
@@ -6123,6 +6340,9 @@ void operaJoystickMenu()
 
               // Imprime tela de registradores 1.
               imprimeBaseRegs1();
+
+              // Imprime valores dos registradores.
+              imprimeValuesRegs1();
 
               // Mantém o item atual como o item LOAD.
               itemMenuReg = 2;
@@ -6150,6 +6370,9 @@ void operaJoystickMenu()
                     // Imprime tela com segundo conjunto de registradores.
                     imprimeBaseRegs2();
 
+                    // Imprime valores dos registradores.
+                    imprimeValuesRegs2();
+
                     // Inverte seta atual , continuando invertida assim, a seta selecionada na tela anterior.
                     inverteItemRegs(itemMenuReg);
                     
@@ -6162,6 +6385,9 @@ void operaJoystickMenu()
   
                     // Imprime tela com terceiro conjunto de registradores.
                     imprimeBaseRegs3();
+
+                    // Imprime valores dos registradores.
+                    imprimeValuesRegs3();
 
                     // Inverte seta atual , continuando invertida assim, a seta selecionada na tela anterior.
                     inverteItemRegs(itemMenuReg);
@@ -6443,6 +6669,9 @@ void printDirectory(File dir)
   // Seleciona fonte.
   TV.select_font(font4x6);
 
+  // Liga o LED de acesso ao SD.
+  digitalWrite2(pinLedSD, HIGH);
+
   dir.seek(0);
   
   while(true)
@@ -6482,6 +6711,9 @@ void printDirectory(File dir)
     // Fecha arquivo atual.
     entry.close();
   }
+
+  // Desliga o LED de acesso ao SD.
+  digitalWrite2(pinLedSD, LOW);
 }
 
 
@@ -6493,8 +6725,9 @@ void enviaInstrucao()
   byte contAddress = 0;
   byte base = 0;
   
-  char teste[32];
-  
+  //char teste[32];
+
+  // Solicita reset do MIPS.
   resetMIPS();
  
   // Liga LED de acesso ao FPGA.
@@ -6510,9 +6743,9 @@ void enviaInstrucao()
     converteInstrucao(); 
 
     // Converte bytes lidos para string e armazena o resultado no vetor de caracteres "binCharREG", para ser impresso na tela.
-    sprintf(teste, "%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i", instrucaoBytes[31], instrucaoBytes[30], instrucaoBytes[29], instrucaoBytes[28], instrucaoBytes[27], instrucaoBytes[26], instrucaoBytes[25],instrucaoBytes[24], instrucaoBytes[23], instrucaoBytes[22], instrucaoBytes[21], instrucaoBytes[20], instrucaoBytes[19], instrucaoBytes[18], instrucaoBytes[17], instrucaoBytes[16], instrucaoBytes[15], instrucaoBytes[14], instrucaoBytes[13], instrucaoBytes[12], instrucaoBytes[11], instrucaoBytes[10], instrucaoBytes[9], instrucaoBytes[8], instrucaoBytes[7], instrucaoBytes[6], instrucaoBytes[5], instrucaoBytes[4], instrucaoBytes[3], instrucaoBytes[2], instrucaoBytes[1], instrucaoBytes[0]);
+    //sprintf(teste, "%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i", instrucaoBytes[31], instrucaoBytes[30], instrucaoBytes[29], instrucaoBytes[28], instrucaoBytes[27], instrucaoBytes[26], instrucaoBytes[25],instrucaoBytes[24], instrucaoBytes[23], instrucaoBytes[22], instrucaoBytes[21], instrucaoBytes[20], instrucaoBytes[19], instrucaoBytes[18], instrucaoBytes[17], instrucaoBytes[16], instrucaoBytes[15], instrucaoBytes[14], instrucaoBytes[13], instrucaoBytes[12], instrucaoBytes[11], instrucaoBytes[10], instrucaoBytes[9], instrucaoBytes[8], instrucaoBytes[7], instrucaoBytes[6], instrucaoBytes[5], instrucaoBytes[4], instrucaoBytes[3], instrucaoBytes[2], instrucaoBytes[1], instrucaoBytes[0]);
 
-    Serial.println(teste);
+    //Serial.println(teste);
 
     base = 0;
 
@@ -6608,12 +6841,24 @@ void executa()
     TV.print(25, 40, "EXECUTION ERROR!");
     TV.print(10, 60, "PLEASE, CHECK THE FILE!");
 
+    // Reproduz sample de início.
+    if(emiteSom)
+    {
+      play_rtttl(R2D2Error);
+    }
+
     delay(4000);
   }
   else
   {
     TV.clear_screen();
     TV.print(20, 40, "EXECUTION SUCESSFUL!");
+
+    // Reproduz sample de início.
+    if(emiteSom)
+    {
+      play_rtttl(R2D2Ok);
+    }
 
     delay(4000);
   }
@@ -6643,6 +6888,23 @@ void loop()
     TV.print(43, 40, "FPGA OFF!");
     TV.print(20, 60, "Turn ON to Continue!");
 
+    // Retorna para a tela HOME. e reseta indicadores de itens e telas.
+    itemMenuPrincipal = 1;
+    itemMenuHome = 0;
+    itemMenuReg = 0;
+    itemMenuMem = 0;
+    itemMenuShow = 0;
+    itemOpen = 0;
+    itemRTC = 0;
+    telaAtual = 1;
+    menuAtual = 1;
+    telaReg = 1;
+    telaMem = 1;
+
+    primeiraVezBaixo = true;
+    primeiraVezCima = false;
+
+    resetFPGAOff = true;
     printTelaAtual = true;
   }
 
@@ -6650,6 +6912,13 @@ void loop()
   else if(digitalRead2(pinFPGAPower) == 1)
   {
     printAviso = true;
+
+    // Caso o FPGA tenha sido reiniciado, reseta o circuito.
+    if(resetFPGAOff)
+    {
+      resetMIPS();
+      resetFPGAOff = false;
+    }
     
     // Atualiza dados do RTC e os salva nas respectivas variáveis.
     dadosRTC = rtc.getTime();
@@ -6729,8 +6998,14 @@ void loop()
         // Caso a tela atual seja REG e ela não tenha sido impressa ainda.
         if((telaAtual == 3) && (printTelaAtual == true))
         {
+          // Inicializa com valores default a matriz de registradores.
+          inicializaMatrizRegs();
+          
           // Chama método para impressão da tela REG para primeiros registradores.
           imprimeBaseRegs1();
+
+          // Seta a tela de registradores atual como a 1.
+          telaReg = 1;
 
           // Inverte faixa identificadora do item atual no menu principal (indica que o item está em foco).
           inverteItensMenuPrincipalFaixa(itemMenuPrincipal);

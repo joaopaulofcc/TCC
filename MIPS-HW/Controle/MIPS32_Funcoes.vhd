@@ -70,7 +70,9 @@ PACKAGE MIPS32_Funcoes IS
 		-- OBS:  para testbench 		-> fatorClock = 1
 		--			execuçao com Arduino -> fatorClock = 6250
 		
-	CONSTANT fatorClock			: NATURAL := 1;
+	-- <http://www.estadofinito.com/divisor-frecuencia-vhdl/>
+		
+	CONSTANT fatorClock			: NATURAL := 5000;
 
 
 	--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||

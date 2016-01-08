@@ -74,6 +74,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_RegBankCore IS
 	-- Sinais para conexao com o componente RegBank.
 	SIGNAL SIG_RegBank_clock 		:  STD_LOGIC;
 	SIGNAL SIG_RegBank_we			:  STD_LOGIC_VECTOR(1 DOWNTO 0);
+	SIGNAL SIG_RegBank_reset 		:  STD_LOGIC;
 	SIGNAL SIG_RegBank_regRead1 	:  t_RegSelect;
 	SIGNAL SIG_RegBank_regRead2 	:  t_RegSelect;
 	SIGNAL SIG_RegBank_regWrite1 	:  t_RegSelect;
@@ -87,6 +88,8 @@ ARCHITECTURE BEHAVIOR OF MIPS32_RegBankCore IS
 	-- Máquina de estados da controladora.
 	
 		-- state_RBC_IDLE					:	Estado de IDLE geral da controladora.
+		
+		-- state_RBC_Reset				: 	Estado de Reset do Banco de Regsitradores.
 		
 		--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||
 		
@@ -112,7 +115,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_RegBankCore IS
 		-- state_RBC_Read_Envia			: 	Estado onde os dados lidos dos registradores e armazenados nas variáveis são enviados ao circuito
 		--											requerente por meio do barramento de saida da controladora.
 	
-	TYPE RegBankCore_FSM IS(state_RBC_IDLE,
+	TYPE RegBankCore_FSM IS(state_RBC_IDLE, 		 state_RBC_Reset,
 	
 									state_RBC_Write_IDLE, state_RBC_Write_Solicita, state_RBC_Write_Encerra,
 									
@@ -146,6 +149,7 @@ BEGIN
 		(
 			clock			=> SIG_RegBank_clock,
 			we				=> SIG_RegBank_we,
+			reset			=> SIG_RegBank_reset,
 			regRead1		=> SIG_RegBank_regRead1,
 			regRead2		=> SIG_RegBank_regRead2,
 			regWrite1	=> SIG_RegBank_regWrite1,
@@ -210,6 +214,11 @@ BEGIN
 				
 					nextState <= state_RBC_Write_Solicita;
 					
+				-- Estado de Reset dos Registradores.
+				WHEN "011" =>
+				
+					nextState <= state_RBC_Reset;
+					
 				-- Estados inválidos.
 				WHEN OTHERS =>
 				
@@ -229,8 +238,25 @@ BEGIN
 					-- Sinaliza no barramento de debug o estado atual da FSM.
 					SIG_stateOut1 <= "1111";
 					SIG_stateOut2 <= "1111";
+					
+					SIG_RegBank_reset <= '0';
 
 					-- Encaminha a FSM para o próprio estado atual.
+					nextState <= state_RBC_IDLE;
+					
+				
+				-- %%	
+			
+			
+				-- Estado de reset do Banco de Registradores.
+				WHEN state_RBC_Reset =>
+				
+					-- Sinaliza no barramento de debug o estado atual da FSM.
+					SIG_stateOut1 <= "1111";
+					SIG_stateOut2 <= "1110";
+				
+					SIG_RegBank_reset <= '1';
+				
 					nextState <= state_RBC_IDLE;
 					
 					

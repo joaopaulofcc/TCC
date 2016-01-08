@@ -762,6 +762,11 @@ BEGIN
 	ready			<= SIG_ready;
 	error			<= SIG_error;
 	
+	-- Apaga displays 6, 5, 4.
+	sig_Display6_DADO <= "0000";
+	sig_Display5_DADO <= "0000";
+	sig_Display4_DADO <= "0000";
+	
 	
 	-- Process de controle de toda a FSM do circuito.
 	-- Esse process é ativado com alteraçao de valores nos sinais: "SIG_ClockMIPS_clockOUT" e "reset".
@@ -856,46 +861,67 @@ BEGIN
 					-- Informa que o circuito não tem nenhuma operaçao pronta.
 					SIG_ready <= "000";
 					
+					-- Coloca os sinais de reset das controladoras em nivel baixo.
+					SIG_RBC_reset 	<= '0';
+					SIG_IRC_reset 	<= '0';
+					SIG_DRC_reset 	<= '0';
+					
 					-- Atualiza o próximo estado, apontando esse para o próprio estado atual.
 					nextState <= state_IDLE;
 					
 				
+				-- %%
+				
+				
 				-- Estado IDLE executado após o processador executar todas as instruçoes carregadas na RAM de instruçoes.
 				WHEN state_IDLE_Fim	=>
 				
-					--sig_Display8_DADO <= "1111";
-					--sig_Display7_DADO <= "1111";
+					-- Sinaliza nos display de 7 segmentos o estado atual da FSM.
+					sig_Display8_DADO <= "0001";
+					sig_Display7_DADO <= "1101";
 					
-					sig_Display8_DADO <= "00" & SIG_error;
-					--sig_Display7_DADO <= VAR_INST_opCode(3 DOWNTO 0);
+					-- Sinaliza nos displays de 7 segmentos o status da execução.
+					IF(SIG_error = "00") THEN
+						
+						sig_Display3_DADO <= "0101";
+						sig_Display2_DADO <= "1100";
+						sig_Display1_DADO <= "1100";
+						
+					ELSE
 					
-					--sig_Display6_DADO <= "00" & VAR_INST_funct(5 DOWNTO 4);
-					--sig_Display5_DADO <= VAR_INST_funct(3 DOWNTO 0);
+						sig_Display3_DADO <= "1111";
+						sig_Display2_DADO <= "1010";
+						sig_Display1_DADO <= "0001";
 					
-					--sig_Display4_DADO <= PC(3 DOWNTO 0);
+					END IF;
 					
-					--sig_Display3_DADO <= VAR_ALUresult(3 DOWNTO 0);
-					
-					--sig_Display3_DADO <= std_logic_vector(to_unsigned(VAR_contINSTFetch, 4));
-					
-					--sig_Display2_DADO <= SIG_RBC_dataOut1(3 DOWNTO 0);
-					
-					--sig_Display1_DADO <= SIG_RBC_dataOut2(3 DOWNTO 0);
-					
-					
+					-- Sinaliza no barramento "ready" que a execução foi completada.
 					SIG_ready <= "101";
 					
 					
 					-- Atualiza o próximo estado, apontando esse para o próprio estado atual.
 					nextState <= state_IDLE_Fim;
 					
-					
+				
+				-- %%
+				
+				
 				-- Estado de reset do circuito de controle, i.e. reset de todas as variáveis.
 				WHEN stateMIPS_Reset =>
 				
 					-- Sinaliza nos display de 7 segmentos o estado atual da FSM.
 					sig_Display8_DADO <= "1101";
 					sig_Display7_DADO <= "1101";
+					
+					-- Solicita as controladoras que executem o processo de reset de suas memórias.
+					SIG_RBC_opCode <= "011";
+					SIG_RBC_reset 	<= '1';
+					
+					SIG_IRC_opCode <= "100";
+					SIG_IRC_reset 	<= '1';
+					
+					SIG_DRC_opCode <= "011";
+					SIG_DRC_reset 	<= '1';
 					
 					-- Zera variáveis.
 					VAR_addrRBRead1 	:= (OTHERS => '0');

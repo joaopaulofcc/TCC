@@ -70,6 +70,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_DataRAMCore IS
 	-- Sinais para conexao com o componente RAM de Dados.
 	SIGNAL SIG_RAM_DATA_clock 		:  STD_LOGIC;
 	SIGNAL SIG_RAM_DATA_we			:  STD_LOGIC;
+	SIGNAL SIG_RAM_DATA_reset		:  STD_LOGIC;
 	SIGNAL SIG_RAM_DATA_address 	:  t_AddressINST;
 	SIGNAL SIG_RAM_DATA_dataIn 	:  t_Byte;
 	SIGNAL SIG_RAM_DATA_dataOut 	:  t_Byte;
@@ -78,6 +79,8 @@ ARCHITECTURE BEHAVIOR OF MIPS32_DataRAMCore IS
 	-- Máquina de estados da controladora.
 	
 		-- state_DRC_IDLE 				: Filtra de acordo com o estado atual da FSM apontado por "nextState".
+		
+		-- state_DRC_Reset				: Estado de Reset da memória.
 		
 		--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||
 		
@@ -105,7 +108,7 @@ ARCHITECTURE BEHAVIOR OF MIPS32_DataRAMCore IS
 		-- state_DRC_Write_Encerra		: Estado onde ocorre a finalizaçao do processo de escrita após a solicitaçao de escrita do 4º byte.
 	
 	-- Declaração da máquina de estados para controle do circuito.
-	TYPE DataRAMCore_FSM IS(state_DRC_IDLE,
+	TYPE DataRAMCore_FSM IS(state_DRC_IDLE,			  state_DRC_Reset,
 	
 									state_DRC_Read_IDLE,
 									state_DRC_Read_Solicita1, state_DRC_Read_Busca1,
@@ -140,6 +143,7 @@ BEGIN
 		(
 			clock		=> SIG_RAM_DATA_clock,
 			we			=> SIG_RAM_DATA_we,
+			reset		=> SIG_RAM_DATA_reset,
 			address	=> SIG_RAM_DATA_address,
 			dataIn	=> SIG_RAM_DATA_dataIn,
 			dataOut	=> SIG_RAM_DATA_dataOut
@@ -192,6 +196,11 @@ BEGIN
 				
 					nextState <= state_DRC_Write_Solicita1;
 					
+				-- Estado de Reset da RAM.
+				WHEN "011" =>
+				
+					nextState <= state_DRC_Reset;
+					
 				-- Estados inválidos.
 				WHEN OTHERS =>
 				
@@ -211,8 +220,27 @@ BEGIN
 					-- Sinaliza no barramento de debug o estado atual da FSM.
 					SIG_stateOut1 <= "1111";
 					SIG_stateOut2 <= "1111";
+					
+					-- Mantém nível baixo no sinal de reset da memória.
+					SIG_RAM_DATA_reset <= '0';
 
 					-- Encaminha a FSM para o próprio estado atual.
+					nextState <= state_DRC_IDLE;
+				
+				
+				-- %%	
+			
+			
+				-- Estado de reset da memória.
+				WHEN state_DRC_Reset =>
+				
+					-- Sinaliza no barramento de debug o estado atual da FSM.
+					SIG_stateOut1 <= "1111";
+					SIG_stateOut2 <= "1110";
+				
+					-- Mantém nível alto no sinal de reset da memória.
+					SIG_RAM_DATA_reset <= '1';
+				
 					nextState <= state_DRC_IDLE;
 			
 					
