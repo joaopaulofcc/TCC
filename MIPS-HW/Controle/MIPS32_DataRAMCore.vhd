@@ -50,7 +50,7 @@ ENTITY MIPS32_DataRAMCore IS
 		dataIn	: IN 	t_Word;								-- Byte a ser salvo na posicao "address" da RAM de dados.
 		dataOut	: OUT t_Word;								-- Byte lido da posicao "address" da RAM de dados.
 		
-		bytes		: IN STD_LOGIC_VECTOR(1 DOWNTO 0);
+		bytes		: IN STD_LOGIC_VECTOR(1 DOWNTO 0);	-- Controla a quantidade de bytes a serem lidos ou escritos.
 		
 		opCode	: IN 	STD_LOGIC_VECTOR(2 DOWNTO 0);	-- Seletor de operação do circuito.
 		ready		: OUT STD_LOGIC_VECTOR(2 DOWNTO 0);	-- Sinal indicador de conclusão da operação especificada por "opCode".
@@ -501,7 +501,7 @@ BEGIN
 					SIG_ready <= "000";
 				
 					-- Encaminha a FSM para o próprio estado atual.
-					nextState <= state_DRC_Read_IDLE;
+					nextState <= state_DRC_Write_IDLE;
 				
 				
 				-- %%	
@@ -544,7 +544,7 @@ BEGIN
 						SIG_ready <= "010";
 					
 						-- Encaminha a FSM para o estado IDLE do processo de escrita.
-						nextState <= state_DRC_Read_IDLE;
+						nextState <= state_DRC_Write_IDLE;
 					
 					-- Caso contrário, solicita escrita do 2º byte.
 					ELSE
@@ -580,7 +580,7 @@ BEGIN
 						SIG_ready <= "010";
 					
 						-- Encaminha a FSM para o estado IDLE do processo de escrita.
-						nextState <= state_DRC_Read_IDLE;
+						nextState <= state_DRC_Write_IDLE;
 					
 					-- Caso contrário, solicita escrita do 3º byte.
 					ELSE
@@ -616,7 +616,7 @@ BEGIN
 						SIG_ready <= "010";
 					
 						-- Encaminha a FSM para o estado IDLE do processo de escrita.
-						nextState <= state_DRC_Read_IDLE;
+						nextState <= state_DRC_Write_IDLE;
 					
 					-- Caso contrário, solicita escrita do 4º byte.
 					ELSE
@@ -649,7 +649,7 @@ BEGIN
 					SIG_ready <= "010";
 					
 					-- Encaminha a FSM para o estado IDLE do processo de escrita.
-					nextState <= state_DRC_Read_IDLE;
+					nextState <= state_DRC_Write_IDLE;
 					
 				-- %%%%%%%%%%%%%%% FIM DA FSM DE ESCRITA DE BYTES NA RAM DE DADOS %%%%%%%%%%%%%%%
 					

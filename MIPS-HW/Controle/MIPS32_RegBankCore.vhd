@@ -55,7 +55,7 @@ ENTITY MIPS32_RegBankCore IS
 		dataOut1			: OUT t_Word;								-- Byte 1 lido da posicao "addressRead1" da RAM de instruções.
 		dataOut2			: OUT t_Word;								-- Byte 2 lido da posicao "addressRead2" da RAM de instruções.
 		
-		bytes		: IN  STD_LOGIC_VECTOR(2 DOWNTO 0);
+		bytes				: IN  STD_LOGIC_VECTOR(2 DOWNTO 0); -- Controla a quantidade de bytes a serem lidos ou escritos.
 		
 		opCode			: IN 	STD_LOGIC_VECTOR(2 DOWNTO 0);	-- Seletor de operação do circuito.
 		ready				: OUT STD_LOGIC_VECTOR(2 DOWNTO 0);	-- Sinal indicador de conclusão da operação especificada por "opCode".

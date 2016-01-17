@@ -6728,7 +6728,6 @@ void enviaInstrucao()
   //char teste[32];
 
   // Solicita reset do MIPS.
-  resetMIPS();
  
   // Liga LED de acesso ao FPGA.
   digitalWrite2(pinLedFPGA, HIGH);

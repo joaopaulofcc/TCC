@@ -2419,7 +2419,7 @@ BEGIN
 											SIG_MIPS32_ALU_reset 	<= '1';		
 											SIG_MIPS32_ALU_opCode 	<= "000001";
 											SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
-											SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+											SIG_MIPS32_ALU_in1 		<= STD_LOGIC_VECTOR( RESIZE(SIGNED(VAR_instrucaoAtual(15 DOWNTO 0)), SIG_MIPS32_ALU_in1'LENGTH) );
 											
 											nextState <= state_EX_Wait1;
 										
@@ -2446,7 +2446,7 @@ BEGIN
 											SIG_MIPS32_ALU_reset 	<= '1';		
 											SIG_MIPS32_ALU_opCode 	<= "000001";
 											SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
-											SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+											SIG_MIPS32_ALU_in1 		<= STD_LOGIC_VECTOR( RESIZE(SIGNED(VAR_instrucaoAtual(15 DOWNTO 0)), SIG_MIPS32_ALU_in1'LENGTH) );
 											
 											nextState <= state_EX_Wait1;
 										
@@ -2486,7 +2486,7 @@ BEGIN
 									SIG_MIPS32_ALU_reset 	<= '1';		
 									SIG_MIPS32_ALU_opCode 	<= "000001";
 									SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
-									SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+									SIG_MIPS32_ALU_in1 		<= STD_LOGIC_VECTOR( RESIZE(SIGNED(VAR_instrucaoAtual(15 DOWNTO 0)), SIG_MIPS32_ALU_in1'LENGTH) );
 									
 									nextState <= state_EX_Wait1;
 								
@@ -2513,7 +2513,7 @@ BEGIN
 									SIG_MIPS32_ALU_reset 	<= '1';		
 									SIG_MIPS32_ALU_opCode 	<= "000001";
 									SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
-									SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+									SIG_MIPS32_ALU_in1 		<= STD_LOGIC_VECTOR( RESIZE(SIGNED(VAR_instrucaoAtual(15 DOWNTO 0)), SIG_MIPS32_ALU_in1'LENGTH) );
 									
 									nextState <= state_EX_Wait1;
 								
@@ -2540,7 +2540,7 @@ BEGIN
 									SIG_MIPS32_ALU_reset 	<= '1';		
 									SIG_MIPS32_ALU_opCode 	<= "000001";
 									SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
-									SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+									SIG_MIPS32_ALU_in1 		<= STD_LOGIC_VECTOR( RESIZE(SIGNED(VAR_instrucaoAtual(15 DOWNTO 0)), SIG_MIPS32_ALU_in1'LENGTH) );
 									
 									nextState <= state_EX_Wait1;
 								
@@ -2567,7 +2567,7 @@ BEGIN
 									SIG_MIPS32_ALU_reset 	<= '1';		
 									SIG_MIPS32_ALU_opCode 	<= "000001";
 									SIG_MIPS32_ALU_in0 		<= x"000000" & PC;
-									SIG_MIPS32_ALU_in1 		<= x"0000" & VAR_instrucaoAtual(15 DOWNTO 0);
+									SIG_MIPS32_ALU_in1 		<= STD_LOGIC_VECTOR( RESIZE(SIGNED(VAR_instrucaoAtual(15 DOWNTO 0)), SIG_MIPS32_ALU_in1'LENGTH) );
 									
 									nextState <= state_EX_Wait1;
 								
@@ -3205,7 +3205,7 @@ BEGIN
 					sig_Display7_DADO <= "0001";
 				
 					-- Caso todas as instruçoes ja tenham sido executadas.
-					IF PC = PC_MAX THEN
+					IF PC >= PC_MAX THEN
 					
 						SIG_error <= "00";
 					

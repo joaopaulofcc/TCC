@@ -58,11 +58,10 @@ ARCHITECTURE BEHAVIOR OF MIPS32_ALU IS
 	
 		-- stateReset		: estado onde o circuito é resetado e seus pinos de saída preenchidos com valor '0'.
 		-- stateIDLE		: estado IDLE onde o circuito não realiza nenhuma operação.
-		-- stateLoad		: estado de carregamento dos sinais externos para os pinos internos do circuito.
 		-- stateExecute	: estado onde a operação lógica ou aritmética será executada de acordo com o valor do pino de opCode.
 		-- stateFinish		: estado em que os resultados das operações calculadas no estado Execute são direcionados aos pinos de saída da ALU.
 		
-	TYPE aluState IS (stateReset, stateIDLE, stateLoad, stateExecute, stateFinish);
+	TYPE aluState IS (stateReset, stateIDLE, stateExecute, stateFinish);
 	SIGNAL nextState	: aluState := stateIDLE; -- Define o estado inicial da máquina como sendo o "stateIDLE".
 	
 	-- Sinais para conexão com barramentos externos do circuito, evitando assim que flutuaçoes na entrada propaguem no circuito.
