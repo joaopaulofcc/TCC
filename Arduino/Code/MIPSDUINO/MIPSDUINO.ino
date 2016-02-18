@@ -6578,6 +6578,9 @@ void operaJoystickMenu()
             // RUN
             case 4:
 
+              // Reseta o circuito antes da próxima execução.
+              resetMIPS();
+
               // Chama método para carregar instruções para o MIPS.
               enviaInstrucao();
 
