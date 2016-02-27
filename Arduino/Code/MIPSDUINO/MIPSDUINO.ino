@@ -6747,7 +6747,7 @@ void enviaInstrucao()
     // Converte bytes lidos para string e armazena o resultado no vetor de caracteres "binCharREG", para ser impresso na tela.
     //sprintf(teste, "%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i", instrucaoBytes[31], instrucaoBytes[30], instrucaoBytes[29], instrucaoBytes[28], instrucaoBytes[27], instrucaoBytes[26], instrucaoBytes[25],instrucaoBytes[24], instrucaoBytes[23], instrucaoBytes[22], instrucaoBytes[21], instrucaoBytes[20], instrucaoBytes[19], instrucaoBytes[18], instrucaoBytes[17], instrucaoBytes[16], instrucaoBytes[15], instrucaoBytes[14], instrucaoBytes[13], instrucaoBytes[12], instrucaoBytes[11], instrucaoBytes[10], instrucaoBytes[9], instrucaoBytes[8], instrucaoBytes[7], instrucaoBytes[6], instrucaoBytes[5], instrucaoBytes[4], instrucaoBytes[3], instrucaoBytes[2], instrucaoBytes[1], instrucaoBytes[0]);
 
-    //Serial.println(teste);
+   // Serial.println(teste);
 
     base = 0;
 

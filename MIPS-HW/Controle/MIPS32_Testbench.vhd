@@ -153,7 +153,7 @@ BEGIN
 	-- Início do process para execução do circuito (Carregar dados do arquivo, Executar e Ler Registradores)
 	P_LeREGS: PROCESS IS
 		
-		FILE vector_file: TEXT IS IN "fatorial7.txt";				-- Declara uma variável do tipo arquivo e aponta para o path do arquivo de instruçoes que deverá ser carregado.
+		FILE vector_file: TEXT IS IN "Testes/Fatorial.txt";	-- Declara uma variável do tipo arquivo e aponta para o path do arquivo de instruçoes que deverá ser carregado.
 		VARIABLE file_line : LINE; 									-- Armazena uma linha lido do arquivo.
 		VARIABLE str_stimulus_in: STRING(32 DOWNTO 1);			-- Armazena a instruçao da linha lida (32 bites).
 		VARIABLE stimulus_in : STD_LOGIC_VECTOR(31 DOWNTO 0); -- Armazena a instruçao lida pós conversão para STD_LOGIC_VECTOR.
@@ -278,7 +278,7 @@ BEGIN
 		-- %%%%%%%%%%%%%%% SOLICITAÇAO DE LEITURA DE TODOS OS REGISTRADORES %%%%%%%%%%%%%%%
 		
 		-- Percorre todos os registradores.
-		FOR i IN 0 TO 33 LOOP
+		FOR i IN 11 TO 11 LOOP
 		
 			-- Solicita byte a byte o conteúdo do i-ésimo registrador.
 			FOR j IN 0 TO 3 LOOP

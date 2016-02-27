@@ -72,7 +72,7 @@ PACKAGE MIPS32_Funcoes IS
 		
 	-- <http://www.estadofinito.com/divisor-frecuencia-vhdl/>
 		
-	CONSTANT fatorClock			: NATURAL := 5000;
+	CONSTANT fatorClock			: NATURAL := 6250;
 
 
 	--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||--||
