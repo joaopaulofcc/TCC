@@ -1,4 +1,4 @@
-![alt tag](https://raw.githubusercontent.com/joaopaulofcc/TCC/Arduino/MIPSDUINO32.jpg)
+![alt tag](https://github.com/joaopaulofcc/TCC/blob/master/Arduino/MIPSDUINO32.jpg?raw=true)
 
 # TCC
 TCC CComp T1 - IFMG campus Formiga - 2016
